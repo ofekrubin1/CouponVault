@@ -5,8 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host --port 5173 --strictPort",
+    "dev:emu": "vite --mode emulator --host --port 5174 --strictPort",
+    "emulators": "firebase emulators:start --only auth,firestore --project demo-couponvault",
     "build": "vite build",
     "preview": "vite preview",
+    "test": "npm run test:unit && npm run test:rules && npm run test:e2e",
+    "test:unit": "vitest run tests/unit",
+    "test:rules": "firebase emulators:exec --only firestore --project demo-couponvault \"vitest run tests/rules\"",
+    "test:e2e": "firebase emulators:exec --only auth,firestore --project demo-couponvault \"playwright test\"",
     "deploy": "vite build && firebase deploy --only hosting",
     "deploy:rules": "firebase deploy --only firestore"
   },
@@ -18,11 +24,14 @@
     "react-dom": "18.3.1"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "3.0.4",
+    "@playwright/test": "1.64.1",
     "@vitejs/plugin-react": "4.3.4",
     "autoprefixer": "10.4.20",
     "firebase-tools": "15.32.1",
     "postcss": "8.4.49",
     "tailwindcss": "3.4.16",
-    "vite": "5.4.11"
+    "vite": "5.4.11",
+    "vitest": "2.1.8"
   }
 }

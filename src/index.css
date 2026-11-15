@@ -2,40 +2,66 @@
 @tailwind components;
 @tailwind utilities;
 
-html,
-body {
-  -webkit-tap-highlight-color: transparent;
-  overscroll-behavior-y: none;
-}
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    background: #f3f3f4;
+  }
 
-body {
-  @apply font-sans text-slate-800 antialiased;
+  body {
+    @apply bg-canvas font-sans text-ink antialiased;
+    -webkit-tap-highlight-color: transparent;
+    min-height: 100dvh;
+  }
+
+  button,
+  a,
+  input,
+  select,
+  textarea,
+  label {
+    touch-action: manipulation;
+  }
+
+  button {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* 16px+ in form fields so iOS never zooms the page on focus. */
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  input[type='number']::-webkit-inner-spin-button,
+  input[type='number']::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type='number'] {
+    -moz-appearance: textfield;
+  }
 }
 
 @layer components {
-  .input {
-    @apply w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-base outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100;
+  .field {
+    @apply w-full rounded-[10px] border border-line bg-white px-3.5 py-3 text-ink shadow-inset outline-none transition-colors duration-150 placeholder:text-mute/35 focus:border-gold/60 focus:ring-1 focus:ring-gold/25;
+  }
+  .field-error {
+    @apply border-danger/60 focus:border-danger/70 focus:ring-danger/20;
   }
   .label {
-    @apply mb-1 block text-sm font-medium text-slate-600;
+    @apply mb-1.5 block text-xs font-medium tracking-wide text-mute;
   }
-  .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 font-medium transition active:scale-[0.98] disabled:opacity-50;
+  /* Small label above titles (TripFlow style); Hebrew reads better with a lighter letter-spacing. */
+  .eyebrow {
+    @apply text-[11px] font-light uppercase tracking-[0.08em] text-mute/50;
   }
-  .btn-primary {
-    @apply btn bg-brand-600 text-white hover:bg-brand-700;
-  }
-  .btn-secondary {
-    @apply btn bg-slate-100 text-slate-700 hover:bg-slate-200;
-  }
-  .btn-danger {
-    @apply btn bg-red-50 text-red-600 hover:bg-red-100;
-  }
-  .card {
-    @apply rounded-2xl bg-white shadow-sm ring-1 ring-slate-100;
-  }
-  .chip {
-    @apply shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition;
+  .section-title {
+    @apply text-xs font-medium uppercase tracking-widest text-mute/60;
   }
 }
 
@@ -45,14 +71,3 @@ body {
 .no-scrollbar {
   scrollbar-width: none;
 }
-
-@keyframes sheet-up {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
-}
-@keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-.animate-sheet { animation: sheet-up 0.22s ease-out; }
-.animate-fade { animation: fade-in 0.2s ease-out; }

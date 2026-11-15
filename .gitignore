@@ -1,5 +1,8 @@
 node_modules
 dist
+dist-emu
 .firebase
 *.log
 .env*
+test-results
+playwright-report

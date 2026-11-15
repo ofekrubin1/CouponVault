@@ -12,4 +12,15 @@ npm run deploy:rules  # Firestore rules
 npm run deploy        # build + Firebase Hosting
 ```
 
+## Tests
+
+All against the local Firebase emulators (Java required), never production data.
+
+```
+npm run test:unit     # date / value / sorting logic (Vitest)
+npm run test:rules    # Firestore security rules
+npm run test:e2e      # the app end to end: iPhone (WebKit) + Android (Chromium), Playwright
+npm test              # all of the above
+```
+
 Firebase project: `couponvault-2026` (Firestore + Google Auth + Hosting).

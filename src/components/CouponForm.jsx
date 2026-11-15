@@ -1,16 +1,33 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { arrayUnion } from 'firebase/firestore';
-import { ChevronDown } from 'lucide-react';
-import BottomSheet from './BottomSheet';
-import { COUPON_TYPES } from '../constants';
+import { ChevronDown, Plus, X, Hash, Store, Type, Gift, Check } from 'lucide-react';
+import Sheet from '../ui/Sheet';
+import { Button, Segmented, cx } from '../ui/primitives';
+import { Field, Input, TextArea, DateInput } from '../ui/fields';
+import { COUPON_TYPES, categoryStyle } from '../constants';
 import { addCoupon, updateCoupon, updateFamily } from '../data';
-import { useToast } from './Toast';
+import { EXPIRY_PRESETS, presetDate, round2, usedAmount } from '../lib';
+import { useToast } from '../ui/feedback';
 
 const NEW_CAT = '__new__';
+
+function validate(f, newCat) {
+  const e = {};
+  if (!f.title.trim()) e.title = 'חסר שם לקופון';
+  if (!f.store.trim()) e.store = 'חסר איפה אפשר לממש';
+  if (f.category === NEW_CAT && !newCat.trim()) e.category = 'חסר שם לקטגוריה החדשה';
+  const v = f.value === '' ? null : Number(f.value);
+  if (f.type === 'money' && !(v > 0)) e.value = 'בשובר כספי צריך להזין סכום';
+  if (f.type === 'percent' && v != null && !(v > 0 && v <= 100)) e.value = 'אחוז בין 1 ל-100';
+  return e;
+}
+
+const ORDER = ['title', 'store', 'category', 'value'];
 
 export default function CouponForm({ coupon, family, user, categories, stores, onClose }) {
   const editing = !!coupon;
   const toast = useToast();
+  const body = useRef(null);
   const [f, setF] = useState(() => ({
     title: coupon?.title || '',
     store: coupon?.store || '',
@@ -24,146 +41,219 @@ export default function CouponForm({ coupon, family, user, categories, stores, o
   }));
   const [newCat, setNewCat] = useState('');
   const [more, setMore] = useState(!!(coupon?.source || coupon?.notes));
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState('');
+  const [errors, setErrors] = useState({});
+  const [storeFocus, setStoreFocus] = useState(false);
 
-  const set = (k) => (e) => setF((p) => ({ ...p, [k]: e.target.value }));
-  const usedSoFar = useMemo(
-    () => (coupon?.usages || []).reduce((s, u) => s + (Number(u.amount) || 0), 0),
-    [coupon],
-  );
+  const set = (k) => (e) => {
+    const v = e?.target ? e.target.value : e;
+    setF((p) => ({ ...p, [k]: v }));
+    if (errors[k]) setErrors((p) => ({ ...p, [k]: undefined }));
+  };
 
-  async function save() {
-    setErr('');
-    if (!f.title.trim()) return setErr('חסר שם לקופון');
-    if (!f.store.trim()) return setErr('חסר איפה אפשר לממש');
+  const used = useMemo(() => (coupon ? usedAmount(coupon) : 0), [coupon]);
+  const storeSuggestions = useMemo(() => {
+    const q = f.store.trim().toLowerCase();
+    return stores.filter((s) => s.toLowerCase() !== q && (!q || s.toLowerCase().includes(q))).slice(0, 6);
+  }, [stores, f.store]);
+
+  function save() {
+    const e = validate(f, newCat);
+    setErrors(e);
+    const first = ORDER.find((k) => e[k]);
+    if (first) {
+      const el = body.current?.querySelector(`[data-field="${first}"]`);
+      el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      el?.querySelector('input')?.focus({ preventScroll: true });
+      return;
+    }
+
     const category = f.category === NEW_CAT ? newCat.trim() : f.category;
-    if (f.category === NEW_CAT && !category) return setErr('חסר שם לקטגוריה החדשה');
-    const value = f.value === '' ? null : Number(f.value);
-    if (f.type === 'money' && !(value > 0)) return setErr('בשובר כספי צריך סכום');
-    if (value != null && (Number.isNaN(value) || value < 0)) return setErr('ערך לא תקין');
-
+    const value = f.type === 'other' || f.value === '' ? null : Number(f.value);
     const data = {
       title: f.title.trim(),
       store: f.store.trim(),
       category: category || '',
       type: f.type,
-      value: f.type === 'other' ? null : value,
+      value,
       expiry: f.expiry || null,
       code: f.code.trim(),
       source: f.source.trim(),
       notes: f.notes.trim(),
     };
 
-    setBusy(true);
-    try {
-      if (category && !categories.includes(category)) {
-        await updateFamily(family.id, { customCategories: arrayUnion(category) });
-      }
-      if (editing) {
-        if (data.type === 'money') {
-          data.balance = Math.max(0, Math.round((value - usedSoFar) * 100) / 100);
-        } else {
-          data.balance = null;
-        }
-        await updateCoupon(family.id, coupon.id, data);
-        toast('הקופון עודכן');
-      } else {
-        await addCoupon(family.id, user, data);
-        toast('הקופון נוסף');
-      }
-      onClose();
-    } catch (e) {
-      console.error(e);
-      setErr('השמירה נכשלה. נסה שוב.');
-      setBusy(false);
+    if (category && !categories.includes(category)) {
+      updateFamily(family.id, { customCategories: arrayUnion(category) });
     }
+    if (editing) {
+      data.balance = data.type === 'money' ? Math.max(0, round2(value - used)) : null;
+      updateCoupon(family.id, coupon.id, data);
+      toast('השינויים נשמרו');
+    } else {
+      addCoupon(family.id, user, data);
+      toast('הקופון נוסף');
+    }
+    onClose();
   }
 
+  const unit = f.type === 'money' ? '₪' : f.type === 'percent' ? '%' : null;
+
   return (
-    <BottomSheet
+    <Sheet
       title={editing ? 'עריכת קופון' : 'קופון חדש'}
       onClose={onClose}
       footer={
-        <button className="btn-primary w-full" onClick={save} disabled={busy}>
-          {busy ? 'שומר…' : editing ? 'שמור שינויים' : 'הוסף קופון'}
-        </button>
+        <Button variant="primary" size="lg" className="w-full" onClick={save} icon={editing ? Check : Plus} data-testid="coupon-save">
+          {editing ? 'שמור שינויים' : 'הוסף קופון'}
+        </Button>
       }
     >
-      <div className="space-y-3">
-        <div>
-          <label className="label">שם הקופון *</label>
-          <input className="input" value={f.title} onChange={set('title')} placeholder="למשל: שובר מתנה לזארה" autoFocus={!editing} />
-        </div>
+      <div ref={body} className="space-y-4 pb-2">
+        <Field id="title" label="שם הקופון" error={errors.title}>
+          <Input id="title" icon={Type} value={f.title} onChange={set('title')} placeholder="למשל: שובר מתנה לזארה" error={errors.title} enterKeyHint="next" />
+        </Field>
 
-        <div>
-          <label className="label">איפה אפשר לממש *</label>
-          <input className="input" value={f.store} onChange={set('store')} list="stores-list" placeholder="למשל: זארה, כל סניפי שופרסל" />
-          <datalist id="stores-list">
-            {stores.map((s) => <option key={s} value={s} />)}
-          </datalist>
-        </div>
-
-        <div>
-          <label className="label">קטגוריה</label>
-          <select className="input" value={f.category} onChange={set('category')}>
-            <option value="">ללא</option>
-            {categories.map((c) => <option key={c} value={c}>{c}</option>)}
-            <option value={NEW_CAT}>+ קטגוריה חדשה…</option>
-          </select>
-          {f.category === NEW_CAT && (
-            <input className="input mt-2" value={newCat} onChange={(e) => setNewCat(e.target.value)} placeholder="שם הקטגוריה" autoFocus />
-          )}
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="label">סוג</label>
-            <select className="input" value={f.type} onChange={set('type')}>
-              {Object.entries(COUPON_TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-            </select>
-          </div>
-          {f.type !== 'other' && (
-            <div>
-              <label className="label">{f.type === 'money' ? 'סכום (₪) *' : 'אחוז הנחה'}</label>
-              <input className="input" type="number" inputMode="decimal" min="0" value={f.value} onChange={set('value')} placeholder={f.type === 'money' ? '200' : '20'} />
+        <Field id="store" label="איפה אפשר לממש" error={errors.store}>
+          <Input
+            id="store"
+            icon={Store}
+            value={f.store}
+            onChange={set('store')}
+            onFocus={() => setStoreFocus(true)}
+            onBlur={() => setTimeout(() => setStoreFocus(false), 150)}
+            placeholder="למשל: שופרסל, Buyme, כל רשתות האופנה"
+            error={errors.store}
+            autoComplete="off"
+          />
+          {storeFocus && storeSuggestions.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 pt-1" data-testid="store-suggestions">
+              {storeSuggestions.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => set('store')(s)}
+                  className="rounded-[8px] border border-line bg-soft px-2.5 py-1 text-xs text-mute"
+                >
+                  {s}
+                </button>
+              ))}
             </div>
           )}
-        </div>
-        {editing && f.type === 'money' && usedSoFar > 0 && (
-          <p className="-mt-1 text-xs text-slate-500">כבר נוצלו {usedSoFar}₪. היתרה תחושב מחדש לפי הסכום.</p>
+        </Field>
+
+        <Field id="category" label="קטגוריה" error={errors.category}>
+          <div className="flex flex-wrap gap-1.5">
+            {categories.map((c) => {
+              const on = f.category === c;
+              const { icon: Icon, color } = categoryStyle(c);
+              return (
+                <button
+                  key={c}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => set('category')(on ? '' : c)}
+                  className={cx(
+                    'flex items-center gap-1.5 rounded-[9px] border px-2.5 py-1.5 text-[13px] font-medium transition-colors',
+                    on ? 'border-navy bg-navy text-white' : 'border-line bg-white text-mute',
+                  )}
+                >
+                  <Icon className="h-3.5 w-3.5" style={{ color: on ? '#C9A45B' : color }} strokeWidth={1.75} />
+                  {c}
+                </button>
+              );
+            })}
+            <button
+              type="button"
+              aria-pressed={f.category === NEW_CAT}
+              onClick={() => set('category')(f.category === NEW_CAT ? '' : NEW_CAT)}
+              className={cx(
+                'flex items-center gap-1 rounded-[9px] border border-dashed px-2.5 py-1.5 text-[13px] font-medium',
+                f.category === NEW_CAT ? 'border-gold bg-gold/10 text-gold-deep' : 'border-gold/50 text-gold-dark',
+              )}
+            >
+              <Plus className="h-3.5 w-3.5" strokeWidth={2} /> חדשה
+            </button>
+          </div>
+          {f.category === NEW_CAT && (
+            <Input
+              value={newCat}
+              onChange={(e) => {
+                setNewCat(e.target.value);
+                if (errors.category) setErrors((p) => ({ ...p, category: undefined }));
+              }}
+              placeholder="שם הקטגוריה החדשה"
+              autoFocus
+              error={errors.category}
+              className="mt-2"
+            />
+          )}
+        </Field>
+
+        <Field label="סוג הקופון">
+          <Segmented name="סוג הקופון" value={f.type} onChange={set('type')} options={COUPON_TYPES} />
+        </Field>
+
+        {f.type !== 'other' && (
+          <Field
+            id="value"
+            label={f.type === 'money' ? 'סכום השובר' : 'אחוז ההנחה (לא חובה)'}
+            error={errors.value}
+            hint={editing && f.type === 'money' && used > 0 ? `כבר נוצלו ₪${used}. היתרה תחושב מחדש.` : undefined}
+          >
+            <Input
+              id="value"
+              type="number"
+              inputMode="decimal"
+              min="0"
+              value={f.value}
+              onChange={set('value')}
+              placeholder={f.type === 'money' ? '200' : '20'}
+              unit={unit}
+              error={errors.value}
+            />
+          </Field>
         )}
 
-        <div>
-          <label className="label">תוקף עד</label>
-          <input className="input" type="date" value={f.expiry} onChange={set('expiry')} />
-          <p className="mt-1 text-xs text-slate-400">אפשר להשאיר ריק אם אין תוקף</p>
-        </div>
+        <Field id="expiry" label="בתוקף עד" hint={!f.expiry ? 'אפשר להשאיר ריק אם אין תוקף' : undefined}>
+          <DateInput id="expiry" value={f.expiry} onChange={set('expiry')} placeholder="ללא תאריך תפוגה" />
+          <div className="flex flex-wrap gap-1.5 pt-1">
+            {EXPIRY_PRESETS.map((p) => (
+              <button
+                key={p.months}
+                type="button"
+                onClick={() => set('expiry')(presetDate(p.months))}
+                className="rounded-[8px] bg-navy/5 px-2.5 py-1 text-[11px] font-medium text-navy/60 active:bg-navy/10"
+              >
+                + {p.label}
+              </button>
+            ))}
+          </div>
+        </Field>
 
-        <div>
-          <label className="label">קוד / מספר שובר</label>
-          <input className="input font-mono" dir="ltr" value={f.code} onChange={set('code')} placeholder="ABC-1234" />
-        </div>
+        <Field id="code" label="קוד / מספר שובר" hint="לא חובה">
+          <Input id="code" icon={Hash} dir="ltr" className="text-left font-mono tracking-wider" value={f.code} onChange={set('code')} placeholder="ABC-1234" autoCapitalize="characters" autoComplete="off" />
+        </Field>
 
-        <button type="button" className="flex items-center gap-1 text-sm font-medium text-brand-600" onClick={() => setMore((m) => !m)}>
+        <button type="button" className="flex items-center gap-1 text-[13px] font-medium text-gold-dark" onClick={() => setMore((m) => !m)} aria-expanded={more}>
           פרטים נוספים
-          <ChevronDown size={16} className={`transition ${more ? 'rotate-180' : ''}`} />
+          <ChevronDown className={cx('h-4 w-4 transition-transform', more && 'rotate-180')} strokeWidth={1.75} />
         </button>
         {more && (
-          <>
-            <div>
-              <label className="label">התקבל מ-</label>
-              <input className="input" value={f.source} onChange={set('source')} placeholder="למשל: מתנה מהעבודה, Buyme" />
-            </div>
-            <div>
-              <label className="label">הערות</label>
-              <textarea className="input min-h-[80px]" value={f.notes} onChange={set('notes')} placeholder="מינימום קנייה, רק בסניפים…" />
-            </div>
-          </>
+          <div className="space-y-4">
+            <Field id="source" label="התקבל מ-">
+              <Input id="source" icon={Gift} value={f.source} onChange={set('source')} placeholder="למשל: מתנה מהעבודה, יום הולדת" />
+            </Field>
+            <Field id="notes" label="הערות">
+              <TextArea id="notes" value={f.notes} onChange={set('notes')} placeholder="מינימום קנייה, רק בסניפים…" />
+            </Field>
+          </div>
         )}
-
-        {err && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{err}</p>}
+        {Object.values(errors).some(Boolean) && (
+          <p className="flex items-center gap-1.5 rounded-[10px] bg-danger/5 px-3 py-2 text-[12px] text-danger">
+            <X className="h-3.5 w-3.5" strokeWidth={2} /> יש להשלים את השדות המסומנים
+          </p>
+        )}
       </div>
-    </BottomSheet>
+    </Sheet>
   );
 }
