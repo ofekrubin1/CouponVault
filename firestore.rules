@@ -1,0 +1,57 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{db}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function familyPath(fid) {
+      return /databases/$(db)/documents/families/$(fid);
+    }
+
+    function isMember(fid) {
+      return signedIn() && request.auth.uid in get(familyPath(fid)).data.members;
+    }
+
+    // Personal settings (which family is selected).
+    match /users/{uid} {
+      allow read, write: if signedIn() && request.auth.uid == uid;
+    }
+
+    // Invite code -> familyId. Anyone signed in can look up a code they know,
+    // but nobody can list all codes.
+    match /invites/{code} {
+      allow get: if signedIn();
+      allow create: if signedIn()
+        && request.auth.uid in getAfter(familyPath(request.resource.data.familyId)).data.members;
+      allow delete: if isMember(resource.data.familyId);
+    }
+
+    match /families/{fid} {
+      allow read: if signedIn() && request.auth.uid in resource.data.members;
+
+      allow create: if signedIn()
+        && request.resource.data.members == [request.auth.uid];
+
+      // Members may edit anything. A non-member may only add themselves,
+      // and only when they present a valid invite code for this family.
+      allow update: if signedIn() && (
+        request.auth.uid in resource.data.members || joining()
+      );
+
+      allow delete: if false;
+
+      function joining() {
+        return request.resource.data.members == resource.data.members.concat([request.auth.uid])
+          && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['members', 'memberInfo', 'lastJoinCode'])
+          && get(/databases/$(db)/documents/invites/$(request.resource.data.lastJoinCode)).data.familyId == fid;
+      }
+
+      match /coupons/{cid} {
+        allow read, write: if isMember(fid);
+      }
+    }
+  }
+}
