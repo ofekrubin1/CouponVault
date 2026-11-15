@@ -1,19 +1,12 @@
 {
   "firestore": { "rules": "firestore.rules", "indexes": "firestore.indexes.json" },
-  "hosting": [
-    {
-      "site": "couponvault",
-      "public": "dist",
-      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
-      "rewrites": [{ "source": "**", "destination": "/index.html" }],
-      "headers": [
-        { "source": "/index.html", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] }
-      ]
-    },
-    {
-      "site": "couponvault-2026",
-      "public": "dist",
-      "redirects": [{ "source": "**", "destination": "https://couponvault.web.app", "type": 301 }]
-    }
-  ]
+  "hosting": {
+    "site": "couponvault",
+    "public": "dist",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [{ "source": "**", "destination": "/index.html" }],
+    "headers": [
+      { "source": "/index.html", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] }
+    ]
+  }
 }
