@@ -8,6 +8,12 @@ export function daysLeft(coupon, now = new Date()) {
   return differenceInCalendarDays(parseISO(coupon.expiry), now);
 }
 
+/** A coupon's categories. Older coupons stored a single `category`; newer ones a `categories` list. */
+export function couponCategories(c) {
+  if (Array.isArray(c?.categories) && c.categories.length) return c.categories;
+  return c?.category ? [c.category] : [];
+}
+
 export const isUsed = (c) => c.status === 'used';
 export const isExpired = (c, now) => c.status === 'active' && daysLeft(c, now) !== null && daysLeft(c, now) < 0;
 export const isActive = (c, now) => c.status === 'active' && !isExpired(c, now);

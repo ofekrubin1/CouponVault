@@ -2,7 +2,8 @@ import { AlertTriangle, ChevronLeft } from 'lucide-react';
 import { Card, cx } from '@/ui';
 import { balanceOf, expiryLabel, isMoney, urgency } from '@/domain/coupon';
 import { money } from '@/domain/format';
-import { CategoryTile } from '@/features/coupons';
+import { BrandLogo } from '@/features/coupons';
+import { displayStore } from '@/domain/links';
 
 const worth = (c) => (isMoney(c) ? ` · ${money(balanceOf(c))}` : c.type === 'percent' && c.value ? ` · ${c.value}%` : '');
 
@@ -21,11 +22,11 @@ export function ExpiringCard({ coupons, alertDays, onOpen }) {
         {coupons.map((c) => (
           <li key={c.id}>
             <button type="button" onClick={() => onOpen(c)} className="flex w-full items-center gap-3 py-2.5 text-right" data-testid="expiring-item">
-              <CategoryTile category={c.category} size={32} />
+              <BrandLogo coupon={c} size={32} />
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-medium text-ink">{c.title}</span>
                 <span className="block truncate text-[11px] font-light text-mute/60">
-                  {c.store}
+                  {displayStore(c.store)}
                   {worth(c)}
                 </span>
               </span>

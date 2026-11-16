@@ -56,9 +56,9 @@ export function useCouponActions(family, user) {
         toast('השימוש האחרון בוטל');
       },
 
-      /** Save the form result; adds a new category to the family when needed. */
+      /** Save the form result; adds new categories to the family when needed. */
       save(data, existing, knownCategories) {
-        if (data.category && !knownCategories.includes(data.category)) addCategory(family.id, data.category);
+        for (const c of data.categories || []) if (!knownCategories.includes(c)) addCategory(family.id, c);
         if (existing) {
           updateCoupon(family.id, existing.id, data);
           toast('השינויים נשמרו');

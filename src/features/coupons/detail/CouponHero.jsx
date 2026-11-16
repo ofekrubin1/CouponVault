@@ -1,8 +1,9 @@
 import { Store, Gift, Clock, CheckCheck } from 'lucide-react';
 import { cx } from '@/ui';
-import { balanceOf, expiryLabel, isExpired, isMoney, isUsed, urgency } from '@/domain/coupon';
+import { balanceOf, couponCategories, expiryLabel, isExpired, isMoney, isUsed, urgency } from '@/domain/coupon';
+import { displayStore } from '@/domain/links';
 import { formatDate, money } from '@/domain/format';
-import { categoryStyle } from '../categoryStyle';
+import { BrandLogo } from '../BrandLogo';
 
 // Side notches cut out of the card (a mask, so whatever is behind shows through).
 const NOTCHES = 'radial-gradient(circle 12px at 0 50%, transparent 11.5px, #000 12px), radial-gradient(circle 12px at 100% 50%, transparent 11.5px, #000 12px)';
@@ -55,7 +56,7 @@ function Value({ coupon }) {
 
 /** The coupon as a soft-blue ticket card: category, store, value, expiry. */
 export function CouponHero({ coupon, alertDays }) {
-  const { icon: CatIcon } = categoryStyle(coupon.category);
+  const cats = couponCategories(coupon);
   const used = isUsed(coupon);
   return (
     <div className="rounded-[22px] shadow-hero">
@@ -65,12 +66,23 @@ export function CouponHero({ coupon, alertDays }) {
         <span className="pointer-events-none absolute inset-x-0 top-0 h-1/2 rounded-t-[22px] bg-gradient-to-b from-white/[0.12] to-transparent" />
         <span className="pointer-events-none absolute inset-x-0 bottom-0 h-[2px] bg-gradient-to-r from-transparent via-gold/70 to-transparent" />
 
-        <div className="relative flex items-center gap-2 text-white/70">
-          <CatIcon className="h-4 w-4 text-champagne" strokeWidth={1.5} />
-          <span className="truncate text-xs font-light">{coupon.category || 'קופון'}</span>
-          <span className="mx-1 text-white/30">·</span>
-          <Store className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} />
-          <span className="truncate text-xs font-light">{coupon.store}</span>
+        <div className="relative flex items-center gap-3">
+          <BrandLogo coupon={coupon} size={40} solid />
+          <div className="min-w-0 flex-1">
+            <p className="flex items-center gap-1.5 text-sm font-medium text-white/90">
+              <Store className="h-3.5 w-3.5 shrink-0 text-champagne" strokeWidth={1.75} />
+              <span className="truncate">{displayStore(coupon.store)}</span>
+            </p>
+            {cats.length > 0 && (
+              <div className="mt-1 flex flex-wrap gap-1" data-testid="hero-categories">
+                {cats.map((c) => (
+                  <span key={c} className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-medium text-white/85">
+                    {c}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="relative mt-4">

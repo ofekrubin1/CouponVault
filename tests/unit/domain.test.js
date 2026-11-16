@@ -1,7 +1,10 @@
 // Logic that used to live inside components: redemption math, form validation, filters, families.
 import { describe, it, expect } from 'vitest';
 import { planRedemption, rebalance, summarize, isExpiringSoon, balanceOf } from '@/domain/coupon';
-import { validateCouponForm, couponFromForm, formFromCoupon, firstInvalidField, NEW_CATEGORY } from '@/domain/couponForm';
+import { validateCouponForm, couponFromForm, formFromCoupon, firstInvalidField } from '@/domain/couponForm';
+import { couponCategories } from '@/domain/coupon';
+import { isUrl, urlHost, displayStore, splitLinks } from '@/domain/links';
+import { brandDomain, brandDomainOf, logoUrl } from '@/domain/brands';
 import { EMPTY_FILTERS, filterCoupons, categoryCounts, typeCounts, toggleIn, activeFilterCount, voucherBalance } from '@/domain/filters';
 import { normalizeInviteCode, familyCategories, membersOf, pickCurrentFamily, inviteMessage } from '@/domain/family';
 import { NO_CATEGORY } from '@/domain/constants';
@@ -54,11 +57,13 @@ describe('coupon form', () => {
     expect(validateCouponForm({ ...valid, type: 'percent', value: '120' }).value).toBe('אחוז בין 1 ל-100');
     expect(validateCouponForm({ ...valid, type: 'percent', value: '' })).toEqual({});
   });
-  it('a new category needs a name', () => expect(validateCouponForm({ ...valid, category: NEW_CATEGORY }).category).toBe('חסר שם לקטגוריה החדשה'));
-  it('converts to stored fields (trimmed, typed, new category resolved)', () => {
-    const data = couponFromForm({ ...valid, title: ' שובר ', category: NEW_CATEGORY, newCategory: ' דלק ', expiry: '' });
-    expect(data).toEqual({ title: 'שובר', store: 'זארה', category: 'דלק', type: 'money', value: 200, expiry: null, code: '', source: '', notes: '' });
+  it('a new category needs a name', () => expect(validateCouponForm({ ...valid, addingCategory: true }).category).toBe('חסר שם לקטגוריה החדשה'));
+  it('converts to stored fields (trimmed, typed, several categories incl. a new one)', () => {
+    const data = couponFromForm({ ...valid, title: ' שובר ', categories: ['אופנה', 'בית'], addingCategory: true, newCategory: ' דלק ', expiry: '' });
+    expect(data).toEqual({ title: 'שובר', store: 'זארה', categories: ['אופנה', 'בית', 'דלק'], category: 'אופנה', type: 'money', value: 200, expiry: null, code: '', source: '', notes: '' });
   });
+  it('no duplicate categories', () => expect(couponFromForm({ ...valid, categories: ['בית'], addingCategory: true, newCategory: 'בית' }).categories).toEqual(['בית']));
+  it('an old coupon with a single category opens with it selected', () => expect(formFromCoupon({ title: 'x', category: 'אופנה' }).categories).toEqual(['אופנה']));
   it('editing recalculates the balance from the new value', () => {
     const existing = voucher({ usages: [{ amount: 50 }], balance: 150 });
     expect(couponFromForm({ ...formFromCoupon(existing), title: 'x', store: 'y', value: '300' }, existing).balance).toBe(250);
@@ -92,6 +97,49 @@ describe('filters', () => {
     expect(toggleIn(f.cats, 'אופנה').size).toBe(0);
     expect(voucherBalance(list)).toBe(190);
   });
+});
+
+describe('categories', () => {
+  it('reads the list, or the old single field', () => {
+    expect(couponCategories({ categories: ['א', 'ב'] })).toEqual(['א', 'ב']);
+    expect(couponCategories({ category: 'א' })).toEqual(['א']);
+    expect(couponCategories({})).toEqual([]);
+  });
+  it('a coupon with several categories matches each of them', () => {
+    const list = [{ id: 1, categories: ['מסעדות', 'פנאי ובילוי'], type: 'other', status: 'active' }, { id: 2, category: 'אופנה', type: 'other', status: 'active' }];
+    const ids = (cats) => filterCoupons(list, { filters: { ...EMPTY_FILTERS, cats: new Set(cats) } }).map((c) => c.id);
+    expect(ids(['פנאי ובילוי'])).toEqual([1]);
+    expect(ids(['אופנה', 'מסעדות'])).toEqual([1, 2]);
+    expect(categoryCounts(list)).toEqual([['אופנה', 1], ['מסעדות', 1], ['פנאי ובילוי', 1]]);
+  });
+});
+
+describe('links', () => {
+  it('recognises a web address and shows its site name', () => {
+    expect(isUrl('http://www.htzone.co.il/voucher-zone/10')).toBe(true);
+    expect(isUrl('שופרסל דיל')).toBe(false);
+    expect(urlHost('http://www.htzone.co.il/voucher-zone/10')).toBe('htzone.co.il');
+    expect(displayStore('www.buyme.co.il')).toBe('buyme.co.il');
+    expect(displayStore('זארה')).toBe('זארה');
+  });
+  it('finds links inside notes', () => {
+    expect(splitLinks('מימוש ב https://a.co/x. תודה')).toEqual([{ text: 'מימוש ב ' }, { text: 'https://a.co/x', href: 'https://a.co/x' }, { text: '. תודה' }]);
+    expect(splitLinks('ראו www.site.com')).toEqual([{ text: 'ראו ' }, { text: 'www.site.com', href: 'https://www.site.com' }]);
+    expect(splitLinks('בלי קישור')).toEqual([{ text: 'בלי קישור' }]);
+  });
+});
+
+describe('brand logos', () => {
+  it('knows big chains by Hebrew or English name, loosely', () => {
+    expect(brandDomainOf('שופרסל דיל')).toBe('shufersal.co.il');
+    expect(brandDomainOf('Super-Pharm')).toBe('super-pharm.co.il');
+    expect(brandDomainOf('סופר פארם')).toBe('super-pharm.co.il');
+    expect(brandDomainOf('ZARA')).toBe('zara.com');
+    expect(brandDomainOf('מכולת השכונה')).toBeNull();
+  });
+  it('a store that is a link uses that site', () => expect(brandDomainOf('http://www.htzone.co.il/voucher-zone/10')).toBe('htzone.co.il'));
+  it('falls back to the title', () => expect(brandDomain({ store: 'כל הרשתות', title: 'Buyme 200' })).toBe('buyme.co.il'));
+  it('logo image url', () => expect(logoUrl('zara.com')).toContain('domain=zara.com'));
 });
 
 describe('families', () => {

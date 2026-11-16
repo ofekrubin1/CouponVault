@@ -1,6 +1,19 @@
-import { Copy, Store, Tag, Gift, Calendar, StickyNote, UserRound } from 'lucide-react';
-import { useToast } from '@/ui';
+import { Copy, Store, Tag, Gift, Calendar, StickyNote, UserRound, ExternalLink } from 'lucide-react';
+import { LinkifiedText, useToast } from '@/ui';
 import { formatDate } from '@/domain/format';
+import { couponCategories } from '@/domain/coupon';
+import { displayStore, isUrl, toHref } from '@/domain/links';
+
+/** The store; when it's a web address, a tappable link showing the site name. */
+function StoreValue({ store }) {
+  if (!isUrl(store)) return <LinkifiedText text={store} />;
+  return (
+    <a href={toHref(store.trim())} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 font-medium text-accent" data-testid="store-link">
+      {displayStore(store)}
+      <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.75} />
+    </a>
+  );
+}
 
 function Row({ icon: Icon, label, children }) {
   return (
@@ -44,13 +57,23 @@ export function CouponCode({ code }) {
 export function CouponInfo({ coupon }) {
   return (
     <div className="glass-card divide-y divide-navy/[0.05] rounded-[18px] px-4">
-      <Row icon={Store} label="איפה מממשים">{coupon.store}</Row>
-      {coupon.category && <Row icon={Tag} label="קטגוריה">{coupon.category}</Row>}
+      <Row icon={Store} label="איפה מממשים">
+        <StoreValue store={coupon.store} />
+      </Row>
+      {couponCategories(coupon).length > 0 && (
+        <Row icon={Tag} label={couponCategories(coupon).length > 1 ? 'קטגוריות' : 'קטגוריה'}>
+          {couponCategories(coupon).join(' · ')}
+        </Row>
+      )}
       <Row icon={Calendar} label="תוקף">{coupon.expiry ? formatDate(coupon.expiry) : 'ללא תאריך תפוגה'}</Row>
-      {coupon.source && <Row icon={Gift} label="התקבל מ-">{coupon.source}</Row>}
+      {coupon.source && (
+        <Row icon={Gift} label="התקבל מ-">
+          <LinkifiedText text={coupon.source} />
+        </Row>
+      )}
       {coupon.notes && (
         <Row icon={StickyNote} label="הערות">
-          <span className="whitespace-pre-wrap">{coupon.notes}</span>
+          <LinkifiedText text={coupon.notes} className="whitespace-pre-wrap" />
         </Row>
       )}
       {coupon.createdByName && <Row icon={UserRound} label="נוסף ע״י">{coupon.createdByName}</Row>}

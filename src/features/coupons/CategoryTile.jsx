@@ -2,12 +2,12 @@ import { cx } from '@/ui';
 import { categoryStyle } from './categoryStyle';
 
 /** Small square icon on a tinted background, coloured by category. */
-export function CategoryTile({ category, size = 36, className }) {
+export function CategoryTile({ category, size = 36, className, solid = false }) {
   const { icon: Icon, color } = categoryStyle(category);
   return (
     <span
       className={cx('flex shrink-0 items-center justify-center rounded-[10px]', className)}
-      style={{ width: size, height: size, backgroundColor: `${color}12`, boxShadow: `inset 0 1px 2px ${color}10` }}
+      style={{ width: size, height: size, backgroundColor: solid ? '#fff' : `${color}12`, boxShadow: solid ? '0 1px 3px rgba(10,31,68,0.12)' : `inset 0 1px 2px ${color}10` }}
     >
       <Icon style={{ color, width: size * 0.45, height: size * 0.45 }} strokeWidth={1.6} />
     </span>

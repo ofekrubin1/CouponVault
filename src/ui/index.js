@@ -8,3 +8,4 @@ export { Field, Input, TextArea, DateInput } from './fields';
 export { Sheet } from './Sheet';
 export { ToastProvider, useToast } from './Toast';
 export { ConfirmProvider, useConfirm } from './ConfirmDialog';
+export { LinkifiedText } from './LinkifiedText';

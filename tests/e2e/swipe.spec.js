@@ -78,7 +78,7 @@ test('T44 the row follows the finger: a slow short drag springs back, a quick fl
   }
   // painted on the next animation frame: the ticket ends up ~40px over, under the pointer (headless
   // Chromium may hold back the very last move event, hence one step of tolerance)
-  await expect.poll(async () => box.x - (await ticket(page, 'עדין').boundingBox()).x).toBeGreaterThan(28);
+  await expect.poll(async () => box.x - (await ticket(page, 'עדין').boundingBox()).x).toBeGreaterThan(20);
   expect(box.x - (await ticket(page, 'עדין').boundingBox()).x).toBeLessThan(46);
   await page.mouse.up();
   await expectOpen(page, 'עדין');

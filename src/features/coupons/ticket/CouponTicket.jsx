@@ -1,7 +1,8 @@
 import { Store, CheckCheck, Trash2 } from 'lucide-react';
 import { cx } from '@/ui';
-import { isExpired, isUsed } from '@/domain/coupon';
-import { CategoryTile } from '../CategoryTile';
+import { couponCategories, isExpired, isUsed } from '@/domain/coupon';
+import { displayStore } from '@/domain/links';
+import { BrandLogo } from '../BrandLogo';
 import { ExpiryBadge } from '../ExpiryBadge';
 import { TicketStub } from './TicketStub';
 import { useSwipeToReveal } from './useSwipeToReveal';
@@ -74,12 +75,12 @@ export function CouponTicket({ coupon, alertDays, onClick, onDelete }) {
         >
           <div className={cx('min-w-0 flex-1 py-3.5 pl-3 pr-4', dim && 'opacity-60')}>
             <div className="flex items-center gap-3">
-              <CategoryTile category={coupon.category} size={38} />
+              <BrandLogo coupon={coupon} size={38} />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[15px] font-semibold text-ink">{coupon.title}</p>
                 <p className="mt-0.5 flex items-center gap-1 truncate text-xs font-light text-mute/70">
                   <Store className="h-3 w-3 shrink-0" strokeWidth={1.75} />
-                  <span className="truncate">{coupon.store}</span>
+                  <span className="truncate">{displayStore(coupon.store)}</span>
                 </p>
               </div>
             </div>
@@ -91,7 +92,7 @@ export function CouponTicket({ coupon, alertDays, onClick, onDelete }) {
               ) : (
                 <ExpiryBadge coupon={coupon} alertDays={alertDays} />
               )}
-              {coupon.category && <span className="truncate text-[11px] font-light text-mute/45">{coupon.category}</span>}
+              {couponCategories(coupon).length > 0 && <span className="min-w-0 truncate text-[11px] font-light text-mute/45">{couponCategories(coupon).join(' · ')}</span>}
             </div>
           </div>
 

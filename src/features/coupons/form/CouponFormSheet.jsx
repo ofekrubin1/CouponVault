@@ -60,11 +60,13 @@ export function CouponFormSheet({ coupon, family, user, categories, stores, onCl
           <StoreInput value={f.store} onChange={set('store')} stores={stores} error={errors.store} />
         </Field>
 
-        <Field id="category" label="קטגוריה" error={errors.category}>
+        <Field id="category" label="קטגוריות" hint="אפשר לבחור כמה" error={errors.category}>
           <CategoryPicker
             categories={categories}
-            value={f.category}
-            onChange={set('category')}
+            selected={f.categories}
+            onToggle={(c) => set('categories')(f.categories.includes(c) ? f.categories.filter((x) => x !== c) : [...f.categories, c])}
+            adding={f.addingCategory}
+            onAdding={set('addingCategory', 'category')}
             newName={f.newCategory}
             onNewName={set('newCategory', 'category')}
             error={errors.category}
