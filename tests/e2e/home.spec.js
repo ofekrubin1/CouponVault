@@ -127,3 +127,31 @@ test('T33 the alert-days setting widens the "about to expire" window', async ({ 
   await tab(page, 'קופונים');
   await expect(page.getByTestId('expiring-card').getByTestId('expiring-item')).toHaveCount(1);
 });
+
+test('T56 the "brands with a logo" board shows every supported chain, searchable, and closes with back', async ({ page }) => {
+  await page.route('**/s2/favicons**', (route) => route.fulfill({ path: 'public/icon-192.png', contentType: 'image/png' }));
+  const { familyId } = await setup(page);
+  // reachable from the empty home screen too
+  await expect(page.getByTestId('brands-button')).toBeVisible();
+  await seed(page, familyId, [{ title: 'שובר', store: 'KFC', type: 'other' }]);
+  const button = page.getByTestId('brands-button');
+  await expect(button).toContainText('רשתות עם לוגו');
+  await button.click();
+
+  const board = page.getByRole('dialog', { name: 'רשתות עם לוגו' });
+  await expect(board.getByTestId('brands-board-header')).toContainText('CouponVault');
+  const tiles = board.getByTestId('brand-tile');
+  expect(await tiles.count()).toBeGreaterThanOrEqual(90);
+  await expect(tiles.first().getByTestId('brand-mark')).toBeVisible();
+
+  await board.getByLabel('חיפוש רשת').fill('תו הזהב');
+  await expect(tiles).toHaveCount(1);
+  await expect(tiles.first()).toContainText('שופרסל');
+  await board.getByLabel('חיפוש רשת').fill('אין כזאת רשת');
+  await expect(tiles).toHaveCount(0);
+  await expect(board).toContainText('הרשת לא ברשימה');
+
+  await page.goBack();
+  await expect(board).toBeHidden();
+  await expect(page.getByTestId('coupon-list')).toContainText('שובר');
+});

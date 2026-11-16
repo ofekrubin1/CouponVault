@@ -4,7 +4,7 @@ import { planRedemption, rebalance, summarize, isExpiringSoon, balanceOf } from 
 import { validateCouponForm, couponFromForm, formFromCoupon, firstInvalidField } from '@/domain/couponForm';
 import { couponCategories } from '@/domain/coupon';
 import { isUrl, urlHost, displayStore, splitLinks } from '@/domain/links';
-import { brandDomain, brandDomainOf, logoUrl, logoSources } from '@/domain/brands';
+import { brandDomain, brandDomainOf, logoUrl, logoSources, isOwnLogo, BRAND_LIST, searchBrands } from '@/domain/brands';
 import { EMPTY_FILTERS, filterCoupons, categoryCounts, typeCounts, toggleIn, activeFilterCount, voucherBalance } from '@/domain/filters';
 import { normalizeInviteCode, familyCategories, membersOf, pickCurrentFamily, inviteMessage, alertDaysFor } from '@/domain/family';
 import { NO_CATEGORY } from '@/domain/constants';
@@ -150,11 +150,28 @@ describe('brand logos', () => {
     expect(brandDomainOf('מכולת השכונה')).toBeNull();
   });
   it('a store that is a link uses that site', () => expect(brandDomainOf('http://www.htzone.co.il/voucher-zone/10')).toBe('htzone.co.il'));
+  it('the added Israeli chains', () => {
+    const cases = {
+      'דרים קארד': 'dreamcard.co.il', KFC: 'kfc.co.il', 'תו הזהב': 'shufersal.co.il', 'כרטיס חבר': 'hvr.co.il', חבר: 'hvr.co.il',
+      'משלוחה': 'mishloha.co.il', 'גודי': 'goodi.co.il', 'גלידה גולדה': 'goldaglida.co.il', "פאפא ג'ונס": 'papajohns.co.il',
+      'ג׳פניקה': 'japanika.net', 'זארה הום': 'zarahome.com', 'Pull&Bear': 'pullandbear.com', 'Factory 54': 'factory54.co.il',
+      'מקס סטוק': 'maxstock.co.il', 'AM:PM': 'ampm.co.il', 'פז': 'paz.co.il', 'תחנת פז': 'paz.co.il', 'Yellow': 'yellow.co.il', 'סונול': 'sonol.co.il',
+      'דור אלון': 'doralon.co.il', 'ישרוטל': 'isrotel.com', 'פתאל': 'fattal.co.il', 'אייס': 'ace.co.il',
+    };
+    for (const [text, domain] of Object.entries(cases)) expect([text, brandDomainOf(text)]).toEqual([text, domain]);
+  });
+  it('short names only match as a whole word', () => {
+    expect(brandDomainOf('פנאי ובילוי')).toBeNull(); // contains "ילו"
+    expect(brandDomainOf('מתנה לחבר')).toBeNull(); // contains "חבר"
+    expect(brandDomainOf('אייסקפה')).toBeNull(); // contains "אייס"
+    expect(brandDomainOf('MacBook Air')).toBeNull(); // contains "mac"
+    expect(brandDomainOf('זארה')).toBe('zara.com');
+  });
   it('falls back to the title', () => expect(brandDomain({ store: 'כל הרשתות', title: 'Buyme 200' })).toBe('buyme.co.il'));
   it('logo image url', () => expect(logoUrl('zara.com')).toContain('domain=zara.com'));
   it('Buyme tries its full stork logo before the site icon', () => {
     const [first, second] = logoSources('buyme.co.il');
-    expect(first).toContain('buyme.co.il/assets');
+    expect(first).toBe('/brands/buyme.svg');
     expect(second).toContain('domain=buyme.co.il');
     expect(logoSources('zara.com')).toHaveLength(1);
   });
@@ -183,5 +200,34 @@ describe('families', () => {
     const m = inviteMessage({ name: 'רובין', inviteCode: 'ABC123' }, 'https://couponvault.web.app');
     expect(m).toContain('ABC123');
     expect(m).toContain('https://couponvault.web.app/?join=ABC123');
+  });
+});
+
+describe('brands board', () => {
+  it('lists every brand once with a readable name', () => {
+    const domains = BRAND_LIST.map((b) => b.domain);
+    expect(new Set(domains).size).toBe(domains.length);
+    expect(BRAND_LIST.length).toBeGreaterThanOrEqual(90);
+    expect(BRAND_LIST.every((b) => b.name && !b.name.startsWith('='))).toBe(true);
+    expect(BRAND_LIST.find((b) => b.domain === 'hm.com').name).toBe('H&M');
+    expect(BRAND_LIST.find((b) => b.domain === 'dreamcard.co.il').name).toBe('דרים קארד');
+  });
+  it('every board name is recognised on a coupon as that brand', () => {
+    for (const b of BRAND_LIST) expect(brandDomainOf(b.name), b.name).toBe(b.domain);
+  });
+  it('Yeinot Bitan shows Carrefour (the chain was renamed)', () => expect(brandDomainOf('יינות ביתן')).toBe('carrefour.co.il'));
+  it('stored logos exist in public/brands', async () => {
+    const { existsSync } = await import('node:fs');
+    for (const b of BRAND_LIST) {
+      const own = logoSources(b.domain).find(isOwnLogo);
+      if (own) expect(existsSync(`public${own}`), own).toBe(true);
+    }
+  });
+  it('search matches Hebrew, English and partial names', () => {
+    expect(searchBrands('').length).toBe(BRAND_LIST.length);
+    expect(searchBrands('תו הזהב').map((b) => b.domain)).toEqual(['shufersal.co.il']);
+    expect(searchBrands('KFC').map((b) => b.domain)).toEqual(['kfc.co.il']);
+    expect(searchBrands('זארה').map((b) => b.domain).sort()).toEqual(['zara.com', 'zarahome.com']);
+    expect(searchBrands('xyz-nothing')).toEqual([]);
   });
 });

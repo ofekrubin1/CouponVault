@@ -15,6 +15,7 @@ export function StoreInput({ value, onChange, stores, error }) {
       <Input
         id="store"
         icon={Store}
+        className="!py-2"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onFocus={() => setFocus(true)}

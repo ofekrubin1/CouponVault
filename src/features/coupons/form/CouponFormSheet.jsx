@@ -54,7 +54,7 @@ export function CouponFormSheet({ coupon, family, user, categories, stores, onCl
     >
       <div ref={body} className="space-y-4 pb-2">
         <Field id="title" label="שם הקופון" error={errors.title}>
-          <Input id="title" icon={Type} value={f.title} onChange={set('title')} placeholder="למשל: שובר מתנה לזארה" error={errors.title} enterKeyHint="next" />
+          <Input id="title" icon={Type} className="!py-2" value={f.title} onChange={set('title')} placeholder="למשל: שובר מתנה לזארה" error={errors.title} enterKeyHint="next" />
         </Field>
 
         <Field id="store" label="איפה אפשר לממש" error={errors.store}>
