@@ -7,6 +7,7 @@ import {
 import { auth } from '../firebase';
 import { regenerateInvite, removeMember, setCurrentFamily, updateFamily } from '../data';
 import { ALERT_DAY_OPTIONS, DEFAULT_CATEGORIES, categoryStyle } from '../constants';
+import { buildLabel } from '../appUpdate';
 import FamilyActions from '../components/FamilyActions';
 import { Avatar, Card, Segmented, cx } from '../ui/primitives';
 import { Input } from '../ui/fields';
@@ -281,7 +282,7 @@ export default function Settings({ user, family, families }) {
           </button>
         </div>
       </Card>
-      <p className="pb-2 text-center text-[10px] font-light tracking-widest text-mute/30">COUPONVAULT</p>
+      <p className="pb-2 text-center text-[10px] font-light tracking-widest text-mute/40" data-testid="app-version">COUPONVAULT · גרסה {buildLabel()}</p>
     </div>
   );
 }
