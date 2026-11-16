@@ -22,7 +22,7 @@ export function SummaryCard({ balance, activeCount, expiringCount, moneyCount })
         </div>
         <span className="glass-navy relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-[16px]">
           <span className="sheen" />
-          <Wallet className="relative h-5 w-5 text-gold" strokeWidth={1.5} />
+          <Wallet className="relative h-5 w-5 text-white" strokeWidth={1.5} />
         </span>
       </div>
       <div className="relative mt-4 grid grid-cols-2 gap-2">
@@ -80,13 +80,13 @@ export function ExpiringCard({ coupons, alertDays, onOpen }) {
 const chipCls = (on) =>
   cx(
     'flex items-center gap-1.5 whitespace-nowrap rounded-[12px] border px-3 py-2 text-[13px] font-medium transition-colors',
-    on ? 'glass-navy border-transparent text-white' : 'border-white/80 bg-white/55 text-mute',
+    on ? 'chip-on' : 'border-white/80 bg-white/55 text-mute',
   );
 
 function Chip({ on, onClick, children, group, value }) {
   return (
     <button type="button" aria-pressed={on} onClick={onClick} className={chipCls(on)} data-testid="filter-chip" data-group={group} data-value={value}>
-      {on && <Check className="h-3.5 w-3.5 text-gold" strokeWidth={2.2} />}
+      {on && <Check className="h-3.5 w-3.5 text-[#5C74AA]" strokeWidth={2.2} />}
       {children}
     </button>
   );
@@ -118,7 +118,7 @@ export function FilterPanel({ cats, typeCounts, soonCount, filters, onChange, re
               <Chip key={name} on={on} onClick={() => set({ cats: toggle(filters.cats, name) })} group="cat" value={name}>
                 {!on && <Icon className="h-3.5 w-3.5" style={{ color }} strokeWidth={1.75} />}
                 {name === NO_CATEGORY ? 'ללא קטגוריה' : name}
-                <span className={cx('text-[11px]', on ? 'text-white/60' : 'text-mute/40')}>{n}</span>
+                <span className={cx('text-[11px]', on ? 'text-[#5C74AA]/70' : 'text-mute/40')}>{n}</span>
               </Chip>
             );
           })}
@@ -131,7 +131,7 @@ export function FilterPanel({ cats, typeCounts, soonCount, filters, onChange, re
           {COUPON_TYPES.filter((t) => typeCounts[t.key]).map((t) => (
             <Chip key={t.key} on={filters.types.has(t.key)} onClick={() => set({ types: toggle(filters.types, t.key) })} group="type" value={t.key}>
               {t.label}
-              <span className={cx('text-[11px]', filters.types.has(t.key) ? 'text-white/60' : 'text-mute/40')}>{typeCounts[t.key]}</span>
+              <span className={cx('text-[11px]', filters.types.has(t.key) ? 'text-[#5C74AA]/70' : 'text-mute/40')}>{typeCounts[t.key]}</span>
             </Chip>
           ))}
         </div>

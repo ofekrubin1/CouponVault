@@ -53,7 +53,7 @@ test('T30 category chips filter the list and show what is left to spend', async 
   // several tags at once
   await chip('cat', 'אופנה').click();
   await expect(list).toHaveCount(3);
-  await expect(page.getByTestId('filter-count')).toHaveText('2');
+  await expect(page.getByTestId('filter-button')).toHaveAttribute('data-active', 'true');
   await chip('cat', 'מסעדות').click();
   await expect(list).toHaveCount(1);
   await expect(list.first()).toHaveAttribute('data-title', 'חולצה');
@@ -62,7 +62,7 @@ test('T30 category chips filter the list and show what is left to spend', async 
   await expect(page.getByTestId('filter-panel')).toBeHidden();
   await page.getByTestId('active-filters').getByRole('button', { name: 'הסר סינון אופנה' }).click();
   await expect(list).toHaveCount(4);
-  await expect(page.getByTestId('filter-count')).toHaveCount(0);
+  await expect(page.getByTestId('filter-button')).not.toHaveAttribute('data-active', 'true');
 });
 
 test('T30b filter by type and "expiring soon", then clear everything', async ({ page }) => {

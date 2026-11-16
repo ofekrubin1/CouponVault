@@ -46,7 +46,7 @@ test('screens', async ({ page }) => {
   const d = await openTicket(page, 'Buyme מתנה');
   await page.waitForTimeout(450);
   await shot(page, '07-detail');
-  await d.getByRole('button', { name: 'שימוש חלקי' }).click();
+  await d.getByRole('button', { name: 'מימוש חלקי' }).click();
   await d.getByLabel('סכום שנוצל').fill('70');
   await page.waitForTimeout(200);
   await shot(page, '08-detail-partial');

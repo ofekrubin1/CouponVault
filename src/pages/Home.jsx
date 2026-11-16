@@ -8,7 +8,7 @@ import { daysLeft, isActive, money, sortByExpiry } from '../lib';
 
 const NO_FILTERS = { cats: new Set(), types: new Set(), soon: false };
 
-export default function Home({ coupons, family, onOpen, onAdd, onUse, onDelete }) {
+export default function Home({ coupons, family, onOpen, onAdd, onDelete }) {
   const alertDays = family.alertDays ?? 14;
   const [q, setQ] = useState('');
   const [filters, setFilters] = useState(NO_FILTERS);
@@ -91,18 +91,13 @@ export default function Home({ coupons, family, onOpen, onAdd, onUse, onDelete }
             aria-label="סינון"
             aria-expanded={panel}
             data-testid="filter-button"
+            data-active={filterCount > 0 ? 'true' : undefined}
             className={cx(
-              'relative flex w-[50px] shrink-0 items-center justify-center overflow-hidden rounded-[12px] transition-colors',
-              filterCount || panel ? 'glass-navy text-gold' : 'glass-card text-navy/60',
+              'relative flex w-[50px] shrink-0 items-center justify-center rounded-[12px] border transition-colors duration-200',
+              filterCount || panel ? 'border-gold/40 bg-gold/[0.14] text-gold-deep' : 'glass-card text-navy/55',
             )}
           >
-            {(filterCount || panel) && <span className="sheen" />}
-            <SlidersHorizontal className="relative h-[18px] w-[18px]" strokeWidth={1.75} />
-            {filterCount > 0 && (
-              <span className="absolute -left-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-gold px-1 text-[10px] font-bold text-navy ring-2 ring-white/80" data-testid="filter-count">
-                {filterCount}
-              </span>
-            )}
+            <SlidersHorizontal className="h-[18px] w-[18px]" strokeWidth={1.75} />
           </button>
         </div>
 
@@ -134,12 +129,12 @@ export default function Home({ coupons, family, onOpen, onAdd, onUse, onDelete }
 
       <div className="space-y-3" data-testid="coupon-list">
         {shown.map((c) => (
-          <CouponTicket key={c.id} coupon={c} alertDays={alertDays} onClick={() => onOpen(c)} onUse={onUse} onDelete={onDelete} />
+          <CouponTicket key={c.id} coupon={c} alertDays={alertDays} onClick={() => onOpen(c)} onDelete={onDelete} />
         ))}
         {shown.length === 0 && <p className="py-10 text-center text-sm font-light text-mute/40">לא נמצאו קופונים</p>}
         {shown.length > 0 && (
           <p className="flex items-center justify-center gap-1.5 pt-1 text-[11px] font-light text-mute/40">
-            <Hand className="h-3.5 w-3.5" strokeWidth={1.5} /> החליקו קופון הצידה לניצול או מחיקה
+            <Hand className="h-3.5 w-3.5" strokeWidth={1.5} /> החליקו קופון הצידה כדי למחוק
           </p>
         )}
       </div>

@@ -127,7 +127,7 @@ export function Avatar({ name, photo, size = 36 }) {
   }
   return (
     <span
-      className="flex shrink-0 items-center justify-center rounded-full bg-navy text-sm font-semibold text-white ring-2 ring-white"
+      className="flex shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#9AAED6] to-[#7389BD] text-sm font-semibold text-white ring-2 ring-white"
       style={{ width: size, height: size }}
     >
       {(name || '?').trim()[0]}

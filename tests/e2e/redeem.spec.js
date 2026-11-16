@@ -7,7 +7,7 @@ test('T23 partial use: 200 → use 80 → 120 left, with a live preview and hist
   const { familyId } = await setup(page);
   await seed(page, familyId, [voucher]);
   const s = await openTicket(page, 'שובר 200');
-  await s.getByRole('button', { name: 'שימוש חלקי' }).click();
+  await s.getByRole('button', { name: 'מימוש חלקי' }).click();
   await s.getByLabel('סכום שנוצל').fill('80');
   await expect(s.getByText('יישארו ₪120 בשובר')).toBeVisible();
   await s.getByTestId('partial-confirm').click();
@@ -24,7 +24,7 @@ test('T24 partial use above the balance is refused', async ({ page }) => {
   const { familyId } = await setup(page);
   await seed(page, familyId, [voucher]);
   const s = await openTicket(page, 'שובר 200');
-  await s.getByRole('button', { name: 'שימוש חלקי' }).click();
+  await s.getByRole('button', { name: 'מימוש חלקי' }).click();
   await s.getByLabel('סכום שנוצל').fill('250');
   await s.getByTestId('partial-confirm').click();
   await expect(s.getByRole('alert')).toHaveText('הסכום גדול מהיתרה (₪200)');
@@ -35,8 +35,9 @@ test('T25 using the exact remaining balance moves the voucher to the archive', a
   const { familyId } = await setup(page);
   await seed(page, familyId, [{ ...voucher, balance: 50, usages: [{ at: new Date().toISOString(), by: 'x', byName: 'x', amount: 150 }] }]);
   const s = await openTicket(page, 'שובר 200');
-  await s.getByRole('button', { name: 'שימוש חלקי' }).click();
-  await s.getByLabel('סכום שנוצל').fill('50');
+  await s.getByRole('button', { name: 'מימוש חלקי' }).click();
+  await s.getByRole('button', { name: 'כל היתרה' }).click();
+  await expect(s.getByLabel('סכום שנוצל')).toHaveValue('50');
   await s.getByTestId('partial-confirm').click();
   await expect(s).toBeHidden();
   await expect(ticket(page, 'שובר 200')).toHaveCount(0);
@@ -66,7 +67,7 @@ test('T27 undo the last usage puts the money back', async ({ page }) => {
   const { familyId } = await setup(page);
   await seed(page, familyId, [voucher]);
   const s = await openTicket(page, 'שובר 200');
-  await s.getByRole('button', { name: 'שימוש חלקי' }).click();
+  await s.getByRole('button', { name: 'מימוש חלקי' }).click();
   await s.getByLabel('סכום שנוצל').fill('45.5');
   await s.getByTestId('partial-confirm').click();
   await expect(s.getByTestId('hero-balance')).toHaveText('₪154.5');

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './firebase';
-import { deleteCoupon, redeemCoupon, watchCoupons, watchMyFamilies, watchUserDoc } from './data';
+import { deleteCoupon, watchCoupons, watchMyFamilies, watchUserDoc } from './data';
 import { money } from './lib';
 import { DEFAULT_CATEGORIES } from './constants';
 import { ToastProvider, ConfirmProvider, useConfirm, useToast } from './ui/feedback';
@@ -120,17 +120,7 @@ function Main({ user, family, families, joinCode, ready }) {
   const toast = useToast();
   const confirm = useConfirm();
 
-  // Swipe actions on a coupon row.
-  const use = async (c) => {
-    if (c.type === 'money') {
-      setSheet({ kind: 'detail', id: c.id, partial: true });
-      return;
-    }
-    const ok = await confirm({ title: `לסמן את "${c.title}" כמומש?`, message: 'הקופון יעבור לארכיון. אפשר להחזיר אותו משם.', confirmText: 'כן, מימשתי' });
-    if (!ok) return;
-    redeemCoupon(family.id, user, c, null);
-    toast('סומן כמומש ועבר לארכיון');
-  };
+  // Swipe-to-delete on a coupon row.
   const remove = async (c) => {
     const ok = await confirm({
       title: 'מחיקת קופון',
@@ -179,7 +169,7 @@ function Main({ user, family, families, joinCode, ready }) {
         {coupons === null ? (
           <Spinner className="flex justify-center py-20" />
         ) : tab === 'home' ? (
-          <Home coupons={coupons} family={family} onOpen={open} onAdd={add} onUse={use} onDelete={remove} />
+          <Home coupons={coupons} family={family} onOpen={open} onAdd={add} onDelete={remove} />
         ) : tab === 'archive' ? (
           <Archive coupons={coupons} family={family} onOpen={open} />
         ) : (

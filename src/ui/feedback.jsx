@@ -35,7 +35,7 @@ export function ToastProvider({ children }) {
               role="status"
               className={cx(
                 'flex max-w-full animate-toast items-center gap-2 rounded-full border border-white/20 px-4 py-2.5 text-sm font-medium text-white shadow-pop backdrop-blur-xl',
-                toast.type === 'error' ? 'bg-danger/90' : 'bg-navy/85',
+                toast.type === 'error' ? 'bg-danger/85' : 'bg-[#5B6F9C]/90',
               )}
             >
               {toast.type === 'error' ? (

@@ -75,8 +75,9 @@ function Stub({ coupon, dim }) {
 }
 
 const STUB_W = 98;
-const ACTIONS_W = 160;
+const ACTION_W = 64; // how far the ticket slides open: one small round delete button
 const NOTCH = 8;
+const SNAP = 'transform 0.34s cubic-bezier(0.22, 1, 0.36, 1)';
 
 // Real cut-out notches (a mask), so the page's gradient shows through them like a punched ticket.
 const NOTCH_MASK = [
@@ -85,26 +86,57 @@ const NOTCH_MASK = [
 ].join(', ');
 const MASK_STYLE = { WebkitMaskImage: NOTCH_MASK, maskImage: NOTCH_MASK, WebkitMaskComposite: 'source-in', maskComposite: 'intersect' };
 
+/** Past the open position the row follows the finger with growing resistance (like iOS lists). */
+const rubber = (x) => {
+  const a = Math.abs(x);
+  if (a <= ACTION_W) return x;
+  return Math.sign(x) * (ACTION_W + (a - ACTION_W) * 0.35);
+};
+
 /**
  * A coupon drawn as a glass ticket: details on the right, a perforated stub with the value on the left.
- * With onUse/onDelete it can be swiped either way to reveal "ניצול" and "מחיקה" (one row open at a time).
+ * With onDelete it can be swiped either way to reveal a small delete button (one row open at a time).
+ * The drag moves the DOM directly (no React re-render per frame) so it tracks the finger smoothly.
  */
-export default function CouponTicket({ coupon, alertDays, onClick, onUse, onDelete }) {
+export default function CouponTicket({ coupon, alertDays, onClick, onDelete }) {
   const used = coupon.status === 'used';
   const expired = isExpired(coupon);
   const dim = used || expired;
-  const swipeable = !!(onUse || onDelete);
+  const swipeable = !!onDelete;
 
-  const [offset, setOffset] = useState(0);
-  const [dragging, setDragging] = useState(false);
+  const [open, setOpen] = useState(false);
   const off = useRef(0);
   const swiped = useRef(false);
   const stop = useRef(null);
+  const slider = useRef(null);
+  const actions = useRef(null);
 
-  const close = useCallback(() => {
-    off.current = 0;
-    setOffset(0);
+  const paint = useCallback((x, animate) => {
+    const el = slider.current;
+    const a = actions.current;
+    if (!el) return;
+    el.style.transition = animate ? SNAP : 'none';
+    el.style.transform = x ? `translate3d(${x}px,0,0)` : '';
+    if (a) {
+      const k = Math.min(1, Math.abs(x) / ACTION_W);
+      a.style.opacity = String(k);
+      a.style.justifyContent = x > 0 ? 'flex-end' : 'flex-start';
+      a.style.transition = animate ? 'opacity 0.25s ease' : 'none';
+      const btn = a.firstElementChild;
+      if (btn) btn.style.transform = `scale(${0.6 + 0.4 * k})`;
+    }
   }, []);
+
+  const settle = useCallback(
+    (x) => {
+      off.current = x;
+      paint(x, true);
+      setOpen(x !== 0);
+      if (x) window.dispatchEvent(new CustomEvent('cv-swipe-open', { detail: coupon.id }));
+    },
+    [paint, coupon.id],
+  );
+  const close = useCallback(() => settle(0), [settle]);
 
   // Only one row open: opening this one closes the others.
   useEffect(() => {
@@ -123,37 +155,51 @@ export default function CouponTicket({ coupon, alertDays, onClick, onUse, onDele
     const sy = e.clientY;
     const base = off.current;
     let mode = null;
+    let raf = 0;
+    let last = base;
+    let lastX = sx;
+    let lastT = performance.now();
+    let velocity = 0;
     swiped.current = false;
+
     const move = (ev) => {
       const dx = ev.clientX - sx;
       const dy = ev.clientY - sy;
       if (!mode) {
-        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
-        mode = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v';
-        if (mode === 'h') {
-          swiped.current = true;
-          setDragging(true);
-        }
+        if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+        mode = Math.abs(dx) > Math.abs(dy) * 1.2 ? 'h' : 'v';
+        if (mode === 'h') swiped.current = true;
       }
       if (mode !== 'h') return;
-      const lim = ACTIONS_W + 36;
-      off.current = Math.max(-lim, Math.min(lim, base + dx));
-      setOffset(off.current);
+      const now = performance.now();
+      velocity = (ev.clientX - lastX) / Math.max(1, now - lastT);
+      lastX = ev.clientX;
+      lastT = now;
+      last = rubber(base + dx);
+      if (!raf) {
+        raf = requestAnimationFrame(() => {
+          raf = 0;
+          paint(last, false);
+        });
+      }
     };
     const end = () => {
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', end);
       window.removeEventListener('pointercancel', end);
+      cancelAnimationFrame(raf);
       stop.current = null;
       if (mode !== 'h') return;
-      setDragging(false);
-      const target = Math.abs(off.current) > ACTIONS_W / 2.5 ? Math.sign(off.current) * ACTIONS_W : 0;
-      off.current = target;
-      setOffset(target);
-      if (target) window.dispatchEvent(new CustomEvent('cv-swipe-open', { detail: coupon.id }));
+      // A quick flick opens/closes even if it was short.
+      const flick = Math.abs(velocity) > 0.45;
+      let target;
+      if (flick) target = Math.sign(velocity) === Math.sign(last) || !base ? Math.sign(velocity) * ACTION_W : 0;
+      else target = Math.abs(last) > ACTION_W * 0.5 ? Math.sign(last) * ACTION_W : 0;
+      if (base && target && Math.sign(target) !== Math.sign(base)) target = 0;
+      settle(target);
     };
     stop.current = end;
-    window.addEventListener('pointermove', move);
+    window.addEventListener('pointermove', move, { passive: true });
     window.addEventListener('pointerup', end);
     window.addEventListener('pointercancel', end);
   };
@@ -167,48 +213,36 @@ export default function CouponTicket({ coupon, alertDays, onClick, onUse, onDele
     else onClick?.();
   };
 
-  const act = (fn) => () => {
-    close();
-    fn?.(coupon);
-  };
-  const reveal = Math.min(Math.abs(offset), ACTIONS_W + 36);
-
   return (
     <div className="relative" data-testid="coupon-row" data-title={coupon.title}>
-      {swipeable && offset !== 0 && (
+      {swipeable && (
         <div
-          className={cx('absolute inset-y-0 flex items-stretch gap-2 overflow-hidden py-1', offset > 0 ? 'left-0 pl-1' : 'right-0 pr-1')}
-          style={{ width: reveal }}
+          ref={actions}
+          className={cx('absolute inset-0 flex items-center px-3', !open && 'pointer-events-none')}
+          style={{ opacity: 0 }}
           data-testid="swipe-actions"
+          aria-hidden={!open}
         >
           <button
             type="button"
-            onClick={act(onUse)}
-            className="glass-navy relative flex min-w-[72px] flex-1 flex-col items-center justify-center gap-1 overflow-hidden rounded-[18px] text-xs font-medium text-white"
+            tabIndex={open ? 0 : -1}
+            onClick={() => {
+              close();
+              onDelete(coupon);
+            }}
+            aria-label="מחיקה"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-danger/15 bg-white/80 text-danger shadow-[0_4px_14px_rgba(192,57,43,0.14)] transition-transform duration-150 active:scale-90"
           >
-            <span className="sheen" />
-            <CheckCheck className="relative h-5 w-5 text-gold" strokeWidth={1.75} />
-            <span className="relative">ניצול</span>
-          </button>
-          <button
-            type="button"
-            onClick={act(onDelete)}
-            className="relative flex min-w-[72px] flex-1 flex-col items-center justify-center gap-1 overflow-hidden rounded-[18px] border border-white/30 bg-gradient-to-b from-[#D9534F] to-danger text-xs font-medium text-white shadow-danger"
-          >
-            <span className="sheen" />
-            <Trash2 className="relative h-5 w-5" strokeWidth={1.75} />
-            <span className="relative">מחיקה</span>
+            <Trash2 className="h-[18px] w-[18px]" strokeWidth={1.75} />
           </button>
         </div>
       )}
 
       {/* the moving part: a soft shadow layer (a mask would clip a box-shadow) + the masked glass ticket */}
       <div
+        ref={slider}
         className="relative rounded-[18px] shadow-[0_8px_24px_rgba(10,31,68,0.07),0_1px_3px_rgba(10,31,68,0.05)]"
-        style={{
-          transform: offset ? `translateX(${offset}px)` : undefined,
-          transition: dragging ? 'none' : 'transform 0.38s cubic-bezier(0.34, 1.3, 0.64, 1)',
-        }}
+        style={{ willChange: swipeable ? 'transform' : undefined }}
       >
         <button
           type="button"
@@ -216,7 +250,7 @@ export default function CouponTicket({ coupon, alertDays, onClick, onUse, onDele
           onPointerDown={onPointerDown}
           data-testid="coupon-ticket"
           data-title={coupon.title}
-          className="relative flex w-full select-none items-stretch rounded-[18px] text-right transition-transform duration-150 active:scale-[0.985]"
+          className="relative flex w-full select-none items-stretch rounded-[18px] text-right transition-opacity duration-150 active:opacity-90"
           style={{
             ...MASK_STYLE,
             touchAction: swipeable ? 'pan-y' : undefined,

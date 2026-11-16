@@ -154,10 +154,10 @@ export default function CouponForm({ coupon, family, user, categories, stores, o
                   onClick={() => set('category')(on ? '' : c)}
                   className={cx(
                     'flex items-center gap-1.5 rounded-[9px] border px-2.5 py-1.5 text-[13px] font-medium transition-colors',
-                    on ? 'border-navy bg-navy text-white' : 'border-line bg-white text-mute',
+                    on ? 'chip-on' : 'border-white/80 bg-white/60 text-mute',
                   )}
                 >
-                  <Icon className="h-3.5 w-3.5" style={{ color: on ? '#C9A45B' : color }} strokeWidth={1.75} />
+                  <Icon className="h-3.5 w-3.5" style={{ color }} strokeWidth={1.75} />
                   {c}
                 </button>
               );

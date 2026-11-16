@@ -40,7 +40,7 @@ function Hero({ coupon, alertDays }) {
   return (
     <div className="rounded-[22px] shadow-hero">
     <div
-      className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-[#24468C] via-navy to-[#071633] p-5 text-white"
+      className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-[#7F96C9] via-[#6580B8] to-[#4F689F] p-5 text-white"
       style={HERO_MASK}
       data-testid="coupon-hero"
     >
@@ -50,7 +50,7 @@ function Hero({ coupon, alertDays }) {
       <span className="pointer-events-none absolute inset-x-0 bottom-0 h-[2px] bg-gradient-to-r from-transparent via-gold/70 to-transparent" />
 
       <div className="relative flex items-center gap-2 text-white/70">
-        <CatIcon className="h-4 w-4 text-gold" strokeWidth={1.5} />
+        <CatIcon className="h-4 w-4 text-[#F3E2B3]" strokeWidth={1.5} />
         <span className="truncate text-xs font-light">{coupon.category || 'קופון'}</span>
         <span className="mx-1 text-white/30">·</span>
         <Store className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} />
@@ -72,11 +72,11 @@ function Hero({ coupon, alertDays }) {
         ) : coupon.type === 'percent' && coupon.value ? (
           <>
             <p className="text-[11px] font-light tracking-[0.06em] text-white/50">הנחה</p>
-            <p dir="ltr" className="text-right text-[40px] font-semibold leading-none tracking-tight text-gold">{coupon.value}%</p>
+            <p dir="ltr" className="text-right text-[40px] font-semibold leading-none tracking-tight text-[#F6E7BD]">{coupon.value}%</p>
           </>
         ) : (
           <div className="flex items-center gap-3">
-            <Gift className="h-9 w-9 text-gold" strokeWidth={1.25} />
+            <Gift className="h-9 w-9 text-[#F3E2B3]" strokeWidth={1.25} />
             <p className="text-lg font-medium">{coupon.title}</p>
           </div>
         )}
@@ -85,7 +85,7 @@ function Hero({ coupon, alertDays }) {
       <div className="relative mt-4 flex items-center justify-between border-t border-dashed border-white/15 pt-3 text-xs">
         {used ? (
           <span className="flex items-center gap-1.5 text-white/70">
-            <CheckCheck className="h-3.5 w-3.5 text-gold" strokeWidth={2} />
+            <CheckCheck className="h-3.5 w-3.5 text-[#F3E2B3]" strokeWidth={2} />
             מומש {coupon.usedAt ? `ב-${formatDate(coupon.usedAt)}` : ''}
             {coupon.usedByName ? ` ע״י ${coupon.usedByName}` : ''}
           </span>
@@ -215,7 +215,7 @@ export default function CouponDetail({ coupon, family, user, onClose, onEdit, st
         </Button>
         {isMoney && (
           <Button variant="secondary" size="lg" className="flex-1" icon={Scissors} onClick={() => setPartial(true)}>
-            שימוש חלקי
+            מימוש חלקי
           </Button>
         )}
       </div>
