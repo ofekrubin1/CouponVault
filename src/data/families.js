@@ -122,7 +122,6 @@ export async function joinFamily(user, rawCode) {
 export const updateFamily = (familyId, data) => background(updateDoc(familyDoc(familyId), data), 'update family');
 
 export const renameFamily = (familyId, name) => updateFamily(familyId, { name: name.trim() });
-export const setAlertDays = (familyId, days) => updateFamily(familyId, { alertDays: days });
 export const addCategory = (familyId, name) => updateFamily(familyId, { customCategories: arrayUnion(name) });
 export const removeCategory = (familyId, name) => updateFamily(familyId, { customCategories: arrayRemove(name) });
 

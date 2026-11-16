@@ -2,7 +2,7 @@
 import { couponCategories, isPhysical, rebalance } from './coupon';
 
 /** Field order, so the form can jump to the first invalid one. */
-export const FIELD_ORDER = ['title', 'store', 'category', 'value'];
+export const FIELD_ORDER = ['title', 'store', 'category', 'value', 'code'];
 
 export const formFromCoupon = (coupon) => ({
   title: coupon?.title || '',
@@ -28,6 +28,7 @@ export function validateCouponForm(f) {
   const v = f.value === '' ? null : Number(f.value);
   if (f.type === 'money' && !(v > 0)) e.value = 'בשובר כספי צריך להזין סכום';
   if (f.type === 'percent' && v != null && !(v > 0 && v <= 100)) e.value = 'אחוז בין 1 ל-100';
+  if (!f.code.trim()) e.code = 'חסר קוד / מספר שובר';
   return e;
 }
 

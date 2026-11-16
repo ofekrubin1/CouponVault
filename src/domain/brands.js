@@ -64,5 +64,16 @@ export function brandDomainOf(text) {
 /** The brand's domain for a coupon (store first, then title), or null. */
 export const brandDomain = (coupon) => brandDomainOf(coupon.store) || brandDomainOf(coupon.title);
 
+/**
+ * Full logos for brands whose site icon isn't their logo (e.g. Buyme's icon is just the gift, the logo is the
+ * stork). Loaded from the brand's own site; if the file moves, the site icon is used instead.
+ */
+const FULL_LOGOS = {
+  'buyme.co.il': 'https://buyme.co.il/assets/private-site/logo-with-slogan-CJUGl_X_.svg',
+};
+
 /** Public logo image for a domain (Google's site-icon service; no key needed). */
 export const logoUrl = (domain) => `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
+
+/** Images to try for a brand, best first. */
+export const logoSources = (domain) => [FULL_LOGOS[domain], logoUrl(domain)].filter(Boolean);

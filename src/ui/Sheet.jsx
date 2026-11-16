@@ -40,7 +40,7 @@ function useFocusedFieldVisible(bodyRef, keyboard) {
  * - Pull down to dismiss: from the handle, or from the content when it's at the top.
  * The back button is handled by the caller (useBackClose).
  */
-export function Sheet({ title, onClose, children, footer, actions, label }) {
+export function Sheet({ title, onClose, children, footer, actions, label, tall = false }) {
   useScrollLock();
   const vp = useVisualViewport();
   const sheet = useRef(null);
@@ -69,7 +69,11 @@ export function Sheet({ title, onClose, children, footer, actions, label }) {
         aria-modal="true"
         aria-label={label || title}
         className="glass-strong relative flex w-full max-w-lg animate-sheet flex-col rounded-t-[28px] shadow-sheet"
-        style={{ maxHeight: vp.keyboard ? '100%' : 'calc(100% - 16px)', willChange: 'transform' }}
+        style={{
+          maxHeight: vp.keyboard ? '100%' : 'calc(100% - 16px)',
+          height: tall && !vp.keyboard ? 'calc(100% - max(16px, env(safe-area-inset-top) + 8px))' : undefined,
+          willChange: 'transform',
+        }}
       >
         <div ref={handle} className="shrink-0 cursor-grab touch-none select-none">
           <div className="flex justify-center pb-1 pt-2">
@@ -83,11 +87,11 @@ export function Sheet({ title, onClose, children, footer, actions, label }) {
             </button>
           </div>
         </div>
-        <div ref={body} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-2 pt-2.5" style={{ WebkitOverflowScrolling: 'touch' }}>
+        <div ref={body} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-3 pt-4" style={{ WebkitOverflowScrolling: 'touch' }}>
           {children}
         </div>
         {footer && (
-          <div className="shrink-0 border-t border-navy/[0.06] px-5 pt-2.5" style={{ paddingBottom: vp.keyboard ? '8px' : 'max(10px, env(safe-area-inset-bottom))' }}>
+          <div className="shrink-0 border-t border-navy/[0.06] px-5 pt-3" style={{ paddingBottom: vp.keyboard ? '10px' : 'max(14px, env(safe-area-inset-bottom))' }}>
             {footer}
           </div>
         )}

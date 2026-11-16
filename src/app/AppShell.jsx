@@ -12,7 +12,7 @@ import { Fab } from './Fab';
 import { useCouponSheet } from './useCouponSheet';
 
 /** The signed-in app for one family: header, current tab, bottom bar, + button and coupon sheets. */
-export function AppShell({ user, family, families, ready, joinCode }) {
+export function AppShell({ user, family, families, ready, joinCode, alertDays }) {
   const coupons = useCoupons(family.id, ready);
   const actions = useCouponActions(family, user);
   const sheets = useCouponSheet(coupons);
@@ -34,9 +34,9 @@ export function AppShell({ user, family, families, ready, joinCode }) {
 
   let page;
   if (coupons === null) page = <Spinner className="flex justify-center py-20" />;
-  else if (tab === 'home') page = <HomePage coupons={coupons} family={family} onOpen={sheets.openDetail} onAdd={sheets.openNew} onDelete={actions.remove} />;
-  else if (tab === 'archive') page = <ArchivePage coupons={coupons} family={family} onOpen={sheets.openDetail} />;
-  else page = <SettingsPage key={family.id} user={user} family={family} families={families} />;
+  else if (tab === 'home') page = <HomePage coupons={coupons} alertDays={alertDays} onOpen={sheets.openDetail} onAdd={sheets.openNew} onDelete={actions.remove} />;
+  else if (tab === 'archive') page = <ArchivePage coupons={coupons} alertDays={alertDays} onOpen={sheets.openDetail} />;
+  else page = <SettingsPage key={family.id} user={user} family={family} families={families} alertDays={alertDays} />;
 
   return (
     <>
@@ -62,6 +62,7 @@ export function AppShell({ user, family, families, ready, joinCode }) {
           coupon={sheets.current}
           family={family}
           user={user}
+          alertDays={alertDays}
           onClose={sheets.close}
           onDone={backHome}
           onEdit={() => sheets.openEdit(sheets.current)}

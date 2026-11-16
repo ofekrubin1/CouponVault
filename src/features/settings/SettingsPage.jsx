@@ -6,12 +6,12 @@ import { FamiliesSection } from './sections/FamiliesSection';
 import { AccountSection } from './sections/AccountSection';
 
 /** Settings: one card per topic (each section owns its own state and actions). */
-export function SettingsPage({ user, family, families }) {
+export function SettingsPage({ user, family, families, alertDays }) {
   return (
     <div className="space-y-4">
       <FamilySection family={family} />
       <MembersSection user={user} family={family} families={families} />
-      <AlertsSection family={family} />
+      <AlertsSection user={user} alertDays={alertDays} />
       <CategoriesSection family={family} />
       <FamiliesSection user={user} family={family} families={families} />
       <AccountSection user={user} />

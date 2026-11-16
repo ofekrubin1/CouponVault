@@ -11,8 +11,7 @@ import { FilterPanel } from './filters/FilterPanel';
 import { ActiveFilters } from './filters/ActiveFilters';
 import { useHomeView } from './useHomeView';
 
-export function HomePage({ coupons, family, onOpen, onAdd, onDelete }) {
-  const alertDays = family.alertDays ?? 14;
+export function HomePage({ coupons, alertDays, onOpen, onAdd, onDelete }) {
   const [query, setQuery] = useState('');
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [panel, setPanel] = useState(false);

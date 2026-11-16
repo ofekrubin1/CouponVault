@@ -79,7 +79,7 @@ export async function addCoupon(page, c) {
   if (c.type === 'other') await s.getByRole('radio', { name: 'אחר' }).click();
   if (c.value != null) await s.locator('#value').fill(String(c.value));
   if (c.expiry) await s.locator('#expiry').fill(c.expiry);
-  if (c.code) await s.getByLabel('קוד / מספר שובר').fill(c.code);
+  await s.getByLabel('קוד / מספר שובר').fill(c.code || 'TEST-0001');
   await s.getByTestId('coupon-save').click();
   await expect(s).toBeHidden();
 }

@@ -9,8 +9,9 @@ test('hero with a link store and a category', async ({ page }) => {
   await seed(page, familyId, [
     { title: 'All-inZone', store: 'http://www.htzone.co.il/voucher-zone/10', type: 'money', value: 345, category: 'אחר', code: '144536801-2063', expiry: '2031-04-01' },
     { title: 'תו קנייה', store: 'שופרסל', categories: ['סופרמרקט', 'בית'], type: 'money', value: 200 },
+    { title: 'שובר מתנה', store: 'Buyme', category: 'פנאי ובילוי', type: 'money', value: 300 },
   ]);
-  await expect(page.getByTestId('coupon-ticket')).toHaveCount(2);
+  await expect(page.getByTestId('coupon-ticket')).toHaveCount(3);
   await page.waitForTimeout(1500);
   await page.screenshot({ path: 'test-results/screens/30-list.png' });
   await openTicket(page, 'All-inZone');

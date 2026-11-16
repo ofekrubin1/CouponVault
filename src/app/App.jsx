@@ -39,12 +39,12 @@ function AuthGate() {
 /** Loads the user's families: none → welcome screen; otherwise the app for the selected family. */
 function SignedIn({ user }) {
   const [joinCode] = useState(joinCodeAtStart);
-  const { loading, families, family, ready } = useFamilies(user.uid);
+  const { loading, families, family, ready, alertDays } = useFamilies(user.uid);
   useEffect(() => {
     if (joinCode) clearJoinLink();
   }, [joinCode]);
 
   if (loading) return <Spinner full />;
   if (!family) return <OnboardingPage user={user} joinCode={joinCode} />;
-  return <AppShell key={family.id} user={user} family={family} families={families} ready={ready} joinCode={joinCode} />;
+  return <AppShell key={family.id} user={user} family={family} families={families} ready={ready} joinCode={joinCode} alertDays={alertDays} />;
 }

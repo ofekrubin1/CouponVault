@@ -141,3 +141,29 @@ test('T54 joining succeeds on the first try even when the phone is slow to updat
   await expect(page.getByTestId('members').getByText('אישה')).toBeVisible();
   await b.ctx.close();
 });
+
+test('T55 the expiry alert is personal: changing it does not change it for the rest of the family', async ({ page, browser }, testInfo) => {
+  const { familyId } = await setup(page, { name: 'אופק', family: 'רובין' });
+  await page.evaluate(async (fid) => {
+    const d = new Date();
+    d.setDate(d.getDate() + 20);
+    const iso = d.toISOString().slice(0, 10);
+    await window.__cv.seedCoupon(fid, { title: 'בעוד 20 יום', store: 'x', code: 'X', type: 'other', expiry: iso });
+  }, familyId);
+  const code = await inviteCode(page);
+  const b = await secondPhone(browser, testInfo);
+  await login(b.page, { name: 'דנה' });
+  await joinWithCode(b.page, code);
+  await expect(b.page.locator('[data-family-id]')).toBeVisible();
+
+  // Ofek widens his window to 30 days → the coupon is "about to expire" for him only
+  await tab(page, 'הגדרות');
+  await page.getByRole('radio', { name: '30 ימים' }).click();
+  await tab(page, 'קופונים');
+  await expect(page.getByTestId('expiring-card').getByTestId('expiring-item')).toHaveCount(1);
+  await b.page.waitForTimeout(1500);
+  await expect(b.page.getByTestId('expiring-card')).toHaveCount(0);
+  await tab(b.page, 'הגדרות');
+  await expect(b.page.getByRole('radio', { name: '14 ימים' })).toHaveAttribute('aria-checked', 'true');
+  await b.ctx.close();
+});

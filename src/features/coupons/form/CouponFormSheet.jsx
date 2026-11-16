@@ -43,15 +43,16 @@ export function CouponFormSheet({ coupon, family, user, categories, stores, onCl
 
   return (
     <Sheet
+      tall
       title={editing ? 'עריכת קופון' : 'קופון חדש'}
       onClose={onClose}
       footer={
-        <Button variant="primary" className="w-full !py-3" onClick={save} icon={editing ? Check : Plus} data-testid="coupon-save">
+        <Button variant="primary" size="lg" className="w-full" onClick={save} icon={editing ? Check : Plus} data-testid="coupon-save">
           {editing ? 'שמור שינויים' : 'הוסף קופון'}
         </Button>
       }
     >
-      <div ref={body} className="space-y-2.5 pb-1">
+      <div ref={body} className="space-y-4 pb-2">
         <Field id="title" label="שם הקופון" error={errors.title}>
           <Input id="title" icon={Type} value={f.title} onChange={set('title')} placeholder="למשל: שובר מתנה לזארה" error={errors.title} enterKeyHint="next" />
         </Field>
@@ -73,7 +74,7 @@ export function CouponFormSheet({ coupon, family, user, categories, stores, onCl
           />
         </Field>
 
-        <div className="grid grid-cols-[3fr_2fr] gap-2.5">
+        <div className="grid grid-cols-[3fr_2fr] gap-3">
           <Field label="סוג הקופון">
             <Segmented size="sm" name="סוג הקופון" value={f.type} onChange={set('type')} options={COUPON_TYPES.map((t) => ({ key: t.key, label: t.short }))} />
           </Field>
@@ -83,7 +84,7 @@ export function CouponFormSheet({ coupon, family, user, categories, stores, onCl
         </div>
 
         {/* amount and expiry share a row; without an amount the expiry takes the whole row */}
-        <div className={cx('grid gap-2.5', f.type !== 'other' && 'grid-cols-2')}>
+        <div className={cx('grid gap-3', f.type !== 'other' && 'grid-cols-2')}>
           {f.type !== 'other' && (
             <Field id="value" label={f.type === 'money' ? 'סכום' : 'אחוז הנחה'} error={errors.value} hint={editing && f.type === 'money' && used > 0 ? `כבר נוצלו ₪${used}` : undefined}>
               <Input
@@ -101,13 +102,13 @@ export function CouponFormSheet({ coupon, family, user, categories, stores, onCl
           )}
           <Field id="expiry" label="בתוקף עד">
             <DateInput id="expiry" value={f.expiry} onChange={set('expiry')} placeholder="ללא תוקף" />
-            <div className="flex gap-1 pt-0.5">
+            <div className="flex gap-1.5 pt-1">
               {(f.type === 'other' ? EXPIRY_PRESETS : EXPIRY_PRESETS.filter((p) => p.months >= 3)).map((p) => (
                 <button
                   key={p.months}
                   type="button"
                   onClick={() => set('expiry')(presetDate(p.months))}
-                  className="flex-auto whitespace-nowrap rounded-[7px] bg-navy/5 px-1.5 py-[3px] text-[10.5px] font-medium text-navy/60 active:bg-navy/10"
+                  className="flex-auto whitespace-nowrap rounded-[8px] bg-navy/5 px-1.5 py-1 text-[11px] font-medium text-navy/60 active:bg-navy/10"
                 >
                   {p.label}
                 </button>
@@ -116,7 +117,7 @@ export function CouponFormSheet({ coupon, family, user, categories, stores, onCl
           </Field>
         </div>
 
-        <Field id="code" label="קוד / מספר שובר">
+        <Field id="code" label="קוד / מספר שובר" error={errors.code}>
           <Input
             id="code"
             icon={Hash}
@@ -124,7 +125,8 @@ export function CouponFormSheet({ coupon, family, user, categories, stores, onCl
             className="text-left font-mono tracking-wider placeholder:text-right placeholder:font-sans placeholder:tracking-normal"
             value={f.code}
             onChange={set('code')}
-            placeholder="לא חובה"
+            placeholder="למשל: 1445-3680"
+            error={errors.code}
             autoCapitalize="characters"
             autoComplete="off"
           />

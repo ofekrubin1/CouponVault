@@ -1,5 +1,5 @@
 // Families and invites. Pure functions.
-import { DEFAULT_CATEGORIES, INVITE_CODE_LENGTH } from './constants';
+import { DEFAULT_ALERT_DAYS, DEFAULT_CATEGORIES, INVITE_CODE_LENGTH } from './constants';
 
 const INVITE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O/1/I
 
@@ -27,6 +27,12 @@ export const memberInfoOf = (user) => ({
   email: user.email || '',
   photo: user.photoURL || '',
 });
+
+/**
+ * How many days before expiry a coupon counts as "about to expire" for this user: their own setting, else the
+ * family's (the setting used to be shared), else the default.
+ */
+export const alertDaysFor = (userDoc, family) => userDoc?.alertDays ?? family?.alertDays ?? DEFAULT_ALERT_DAYS;
 
 /** The family to show: the selected one, else the first. */
 export const pickCurrentFamily = (families, currentId) => families.find((f) => f.id === currentId) || families[0];

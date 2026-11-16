@@ -10,7 +10,7 @@ import { RedeemBar } from './RedeemBar';
  * A coupon's sheet: card, code, details, history and the redeem bar.
  * `onDone` is called after a redemption or deletion (the shell returns to the home screen).
  */
-export function CouponDetailSheet({ coupon, family, user, onClose, onEdit, onDone, startPartial = false }) {
+export function CouponDetailSheet({ coupon, family, user, alertDays, onClose, onEdit, onDone, startPartial = false }) {
   const actions = useCouponActions(family, user);
   const done = onDone || onClose;
 
@@ -44,7 +44,7 @@ export function CouponDetailSheet({ coupon, family, user, onClose, onEdit, onDon
       }
     >
       <div className="space-y-4">
-        <CouponHero coupon={coupon} alertDays={family.alertDays ?? 14} />
+        <CouponHero coupon={coupon} alertDays={alertDays} />
         {coupon.code && <CouponCode code={coupon.code} />}
         <CouponInfo coupon={coupon} />
         <UsageHistory coupon={coupon} onUndoLast={() => actions.undoLast(coupon)} />

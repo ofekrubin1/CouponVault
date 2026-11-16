@@ -4,9 +4,9 @@ import { planRedemption, rebalance, summarize, isExpiringSoon, balanceOf } from 
 import { validateCouponForm, couponFromForm, formFromCoupon, firstInvalidField } from '@/domain/couponForm';
 import { couponCategories } from '@/domain/coupon';
 import { isUrl, urlHost, displayStore, splitLinks } from '@/domain/links';
-import { brandDomain, brandDomainOf, logoUrl } from '@/domain/brands';
+import { brandDomain, brandDomainOf, logoUrl, logoSources } from '@/domain/brands';
 import { EMPTY_FILTERS, filterCoupons, categoryCounts, typeCounts, toggleIn, activeFilterCount, voucherBalance } from '@/domain/filters';
-import { normalizeInviteCode, familyCategories, membersOf, pickCurrentFamily, inviteMessage } from '@/domain/family';
+import { normalizeInviteCode, familyCategories, membersOf, pickCurrentFamily, inviteMessage, alertDaysFor } from '@/domain/family';
 import { NO_CATEGORY } from '@/domain/constants';
 
 const NOW = new Date(2026, 10, 15, 12, 0);
@@ -42,8 +42,13 @@ describe('balances', () => {
 });
 
 describe('coupon form', () => {
-  const valid = { ...formFromCoupon(null), title: 'שובר', store: 'זארה', value: '200' };
+  const valid = { ...formFromCoupon(null), title: 'שובר', store: 'זארה', value: '200', code: 'Z-1' };
   it('a complete form is valid', () => expect(validateCouponForm(valid)).toEqual({}));
+  it('the code is required', () => {
+    const e = validateCouponForm({ ...valid, code: '  ' });
+    expect(e.code).toBe('חסר קוד / מספר שובר');
+    expect(firstInvalidField(e)).toBe('code');
+  });
   it('name and store are required', () => {
     const e = validateCouponForm({ ...valid, title: ' ', store: '' });
     expect(e).toMatchObject({ title: 'חסר שם לקופון', store: 'חסר איפה אפשר לממש' });
@@ -60,7 +65,7 @@ describe('coupon form', () => {
   it('a new category needs a name', () => expect(validateCouponForm({ ...valid, addingCategory: true }).category).toBe('חסר שם לקטגוריה החדשה'));
   it('converts to stored fields (trimmed, typed, several categories incl. a new one)', () => {
     const data = couponFromForm({ ...valid, title: ' שובר ', categories: ['אופנה', 'בית'], addingCategory: true, newCategory: ' דלק ', expiry: '' });
-    expect(data).toEqual({ title: 'שובר', store: 'זארה', categories: ['אופנה', 'בית', 'דלק'], category: 'אופנה', type: 'money', format: 'digital', value: 200, expiry: null, code: '', source: '', notes: '' });
+    expect(data).toEqual({ title: 'שובר', store: 'זארה', categories: ['אופנה', 'בית', 'דלק'], category: 'אופנה', type: 'money', format: 'digital', value: 200, expiry: null, code: 'Z-1', source: '', notes: '' });
   });
   it('no duplicate categories', () => expect(couponFromForm({ ...valid, categories: ['בית'], addingCategory: true, newCategory: 'בית' }).categories).toEqual(['בית']));
   it('an old coupon with a single category opens with it selected', () => expect(formFromCoupon({ title: 'x', category: 'אופנה' }).categories).toEqual(['אופנה']));
@@ -147,9 +152,20 @@ describe('brand logos', () => {
   it('a store that is a link uses that site', () => expect(brandDomainOf('http://www.htzone.co.il/voucher-zone/10')).toBe('htzone.co.il'));
   it('falls back to the title', () => expect(brandDomain({ store: 'כל הרשתות', title: 'Buyme 200' })).toBe('buyme.co.il'));
   it('logo image url', () => expect(logoUrl('zara.com')).toContain('domain=zara.com'));
+  it('Buyme tries its full stork logo before the site icon', () => {
+    const [first, second] = logoSources('buyme.co.il');
+    expect(first).toContain('buyme.co.il/assets');
+    expect(second).toContain('domain=buyme.co.il');
+    expect(logoSources('zara.com')).toHaveLength(1);
+  });
 });
 
 describe('families', () => {
+  it('expiry alert is personal: own setting, else the family (old shared setting), else 14 days', () => {
+    expect(alertDaysFor({ alertDays: 7 }, { alertDays: 30 })).toBe(7);
+    expect(alertDaysFor({}, { alertDays: 30 })).toBe(30);
+    expect(alertDaysFor({}, {})).toBe(14);
+  });
   it('invite codes are cleaned while typing', () => expect(normalizeInviteCode('ab-c1 23x')).toBe('ABC123'));
   it('categories = defaults + custom, no duplicates', () => {
     const cats = familyCategories({ customCategories: ['דלק', 'מסעדות'] });

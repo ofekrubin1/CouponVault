@@ -15,12 +15,29 @@ test('T12 add a money voucher with every field', async ({ page }) => {
   expect(saved).toMatchObject({ title: 'Buyme 200', store: 'Buyme', type: 'money', value: 200, balance: 200, code: 'BM-7781', status: 'active', expiry: isoIn(90) });
 });
 
-test('T13 (reported bug) a coupon without a code saves, closes the sheet and shows up', async ({ page }) => {
+test('T13 (reported bug) a new coupon saves, closes the sheet and shows up right away', async ({ page }) => {
   const { familyId } = await setup(page);
-  await addCoupon(page, { title: 'Buyme', store: 'Buyme all', value: 200, expiry: '2030-11-15' });
+  await addCoupon(page, { title: 'Buyme', store: 'Buyme all', value: 200, expiry: '2030-11-15', code: '144536801' });
   await expect(ticket(page, 'Buyme')).toBeVisible();
   await expect(sheet(page, 'קופון חדש')).toBeHidden();
-  await expect.poll(async () => (await serverCoupons(page, familyId))[0]?.code).toBe('');
+  await expect.poll(async () => (await serverCoupons(page, familyId))[0]?.code).toBe('144536801');
+});
+
+test('T13b the coupon code is required', async ({ page }) => {
+  await setup(page);
+  await page.getByTestId('fab-add').click();
+  const s = sheet(page, 'קופון חדש');
+  await s.getByLabel('שם הקופון').fill('בלי קוד');
+  await s.getByLabel('איפה אפשר לממש').fill('זארה');
+  await s.getByRole('radio', { name: 'אחר' }).click();
+  await s.getByTestId('coupon-save').click();
+  await expect(s).toBeVisible();
+  await expect(s.getByText('חסר קוד / מספר שובר')).toBeVisible();
+  await expect(s.getByLabel('קוד / מספר שובר')).toBeFocused();
+  await s.getByLabel('קוד / מספר שובר').fill('Z-77');
+  await s.getByTestId('coupon-save').click();
+  await expect(s).toBeHidden();
+  await expect(ticket(page, 'בלי קוד')).toBeVisible();
 });
 
 test('T14 empty form: inline errors on name and store, sheet stays open', async ({ page }) => {
@@ -31,6 +48,7 @@ test('T14 empty form: inline errors on name and store, sheet stays open', async 
   await expect(s).toBeVisible();
   await expect(s.getByText('חסר שם לקופון')).toBeVisible();
   await expect(s.getByText('חסר איפה אפשר לממש')).toBeVisible();
+  await expect(s.getByText('חסר קוד / מספר שובר')).toBeVisible();
   await expect(s.getByLabel('שם הקופון')).toBeFocused();
   // fixing a field clears its error
   await s.getByLabel('שם הקופון').fill('משהו');
@@ -49,6 +67,7 @@ test('T15 money voucher without an amount: error next to the amount, scrolled in
   await expect(err).toBeInViewport();
   // switching to "other" removes the need for an amount
   await s.getByRole('radio', { name: 'אחר' }).click();
+  await s.getByLabel('קוד / מספר שובר').fill('C-100');
   await s.getByTestId('coupon-save').click();
   await expect(s).toBeHidden();
   await expect(ticket(page, 'שובר')).toBeVisible();
@@ -64,7 +83,7 @@ test('T16 percent and "other" coupons show the right value on the ticket', async
 
 test('T17 edit: new title and amount, balance recalculated after a partial use', async ({ page }) => {
   const { familyId } = await setup(page);
-  await seed(page, familyId, [{ title: 'שובר ישן', store: 'סופר', type: 'money', value: 200, balance: 150, usages: [{ at: new Date().toISOString(), by: 'x', byName: 'x', amount: 50 }] }]);
+  await seed(page, familyId, [{ title: 'שובר ישן', store: 'סופר', code: 'OLD-1', type: 'money', value: 200, balance: 150, usages: [{ at: new Date().toISOString(), by: 'x', byName: 'x', amount: 50 }] }]);
   const s = await openTicket(page, 'שובר ישן');
   await s.getByRole('button', { name: 'עריכה' }).click();
   const f = sheet(page, 'עריכת קופון');
@@ -110,6 +129,7 @@ test('T20 a new category added in the form is saved for the family', async ({ pa
   await s.getByRole('button', { name: 'חדשה' }).click();
   await s.getByPlaceholder('שם הקטגוריה החדשה').fill('דלק');
   await s.getByRole('radio', { name: 'אחר' }).click();
+  await s.getByLabel('קוד / מספר שובר').fill('C-100');
   await s.getByTestId('coupon-save').click();
   await expect(ticket(page, 'תדלוק')).toContainText('דלק');
   await tab(page, 'הגדרות');

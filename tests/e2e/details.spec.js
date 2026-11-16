@@ -13,6 +13,7 @@ test('T47 a coupon can have several categories and is found under each', async (
   await s.getByRole('button', { name: 'פנאי ובילוי', exact: true }).click();
   await expect(s.getByRole('button', { name: 'מסעדות', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await s.getByRole('radio', { name: 'אחר' }).click();
+  await s.getByLabel('קוד / מספר שובר').fill('C-100');
   await s.getByTestId('coupon-save').click();
   await expect(ticket(page, 'ערב בחוץ')).toContainText('מסעדות · פנאי ובילוי');
   await expect.poll(async () => (await serverCoupons(page, familyId))[0]?.categories).toEqual(['מסעדות', 'פנאי ובילוי']);
@@ -117,6 +118,7 @@ test('T52 a coupon can be marked physical (digital by default) and changed back'
   await s.getByLabel('איפה אפשר לממש').fill('שופרסל');
   await s.getByRole('radio', { name: 'פיזי' }).click();
   await s.getByRole('radio', { name: 'אחר' }).click();
+  await s.getByLabel('קוד / מספר שובר').fill('C-100');
   await s.getByTestId('coupon-save').click();
   await expect(ticket(page, 'תו מודפס').getByTestId('physical-badge')).toHaveText('פיזי');
   await expect.poll(async () => (await serverCoupons(page, familyId))[0]?.format).toBe('physical');
@@ -133,6 +135,8 @@ test('T52 a coupon can be marked physical (digital by default) and changed back'
 });
 
 test('T53 the new-coupon form fits one screen; "more details" makes it grow', async ({ page }) => {
+  // iPhone home-screen app height (no Safari toolbars)
+  await page.setViewportSize({ width: 390, height: 780 });
   await setup(page);
   await page.getByTestId('fab-add').click();
   const s = sheet(page, 'קופון חדש');

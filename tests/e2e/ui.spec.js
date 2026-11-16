@@ -92,6 +92,7 @@ test('T39 a toast never blocks taps on the + button', async ({ page }) => {
   await s.getByLabel('שם הקופון').fill('מהיר');
   await s.getByLabel('איפה אפשר לממש').fill('x');
   await s.getByRole('radio', { name: 'אחר' }).click();
+  await s.getByLabel('קוד / מספר שובר').fill('C-100');
   await s.getByTestId('coupon-save').click();
   await expect(page.getByRole('status')).toBeVisible();
   // tap the + while the toast is still showing

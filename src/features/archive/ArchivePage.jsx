@@ -4,7 +4,7 @@ import { EmptyState, Segmented } from '@/ui';
 import { isExpired, isUsed } from '@/domain/coupon';
 import { CouponTicket } from '@/features/coupons';
 
-export function ArchivePage({ coupons, family, onOpen }) {
+export function ArchivePage({ coupons, alertDays, onOpen }) {
   const [tab, setTab] = useState('used');
   const used = useMemo(
     () => coupons.filter(isUsed).sort((a, b) => (b.usedAt || '').localeCompare(a.usedAt || '')),
@@ -33,7 +33,7 @@ export function ArchivePage({ coupons, family, onOpen }) {
       ) : (
         <div className="space-y-3">
           {list.map((c) => (
-            <CouponTicket key={c.id} coupon={c} alertDays={family.alertDays ?? 14} onClick={() => onOpen(c)} />
+            <CouponTicket key={c.id} coupon={c} alertDays={alertDays} onClick={() => onOpen(c)} />
           ))}
         </div>
       )}
