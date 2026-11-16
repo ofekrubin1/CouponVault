@@ -60,12 +60,12 @@ export default function Sheet({ title, onClose, children, footer, actions, label
 
   return createPortal(
     <div className="fixed inset-x-0 z-50 flex items-end justify-center" style={{ top: vp.offsetTop, height: vp.height }}>
-      <div className="absolute inset-0 animate-fade bg-navy/30" onClick={onClose} />
+      <div className="absolute inset-0 animate-fade bg-navy/25 backdrop-blur-[3px]" onClick={onClose} />
       <div
         role="dialog"
         aria-modal="true"
         aria-label={label || title}
-        className="relative flex w-full max-w-lg animate-sheet flex-col rounded-t-[22px] bg-white shadow-sheet"
+        className="glass-strong relative flex w-full max-w-lg animate-sheet flex-col rounded-t-[28px] shadow-sheet"
         style={{
           maxHeight: 'calc(100% - 16px)',
           transform: drag ? `translateY(${drag}px)` : undefined,
@@ -74,15 +74,15 @@ export default function Sheet({ title, onClose, children, footer, actions, label
       >
         <div className="shrink-0 cursor-grab touch-none select-none" onPointerDown={onPointerDown}>
           <div className="flex justify-center pb-1 pt-2.5">
-            <span className="h-1 w-10 rounded-full bg-line" />
+            <span className="h-1.5 w-10 rounded-full bg-navy/15" />
           </div>
-          <div className="flex items-center gap-2 border-b border-canvas px-5 pb-3 pt-1">
+          <div className="flex items-center gap-2 border-b border-navy/[0.06] px-5 pb-3 pt-1">
             <h2 className="min-w-0 flex-1 truncate text-base font-semibold text-ink">{title}</h2>
             {actions}
             <button
               type="button"
               onClick={onClose}
-              className="rounded-[10px] bg-navy/5 p-2 text-navy/60 transition-colors hover:bg-navy/10"
+              className="glass-card rounded-full p-2 text-navy/60 transition-colors"
               aria-label="סגור"
             >
               <X className="h-4 w-4" strokeWidth={1.75} />
@@ -93,7 +93,7 @@ export default function Sheet({ title, onClose, children, footer, actions, label
           {children}
         </div>
         {footer && (
-          <div className="shrink-0 border-t border-canvas bg-white px-5 pt-3" style={{ paddingBottom: 'max(14px, env(safe-area-inset-bottom))' }}>
+          <div className="shrink-0 border-t border-navy/[0.06] px-5 pt-3" style={{ paddingBottom: 'max(14px, env(safe-area-inset-bottom))' }}>
             {footer}
           </div>
         )}

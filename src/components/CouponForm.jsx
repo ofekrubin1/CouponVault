@@ -132,7 +132,7 @@ export default function CouponForm({ coupon, family, user, categories, stores, o
                   type="button"
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => set('store')(s)}
-                  className="rounded-[8px] border border-line bg-soft px-2.5 py-1 text-xs text-mute"
+                  className="rounded-[10px] border border-white/80 bg-white/55 px-2.5 py-1 text-xs text-mute"
                 >
                   {s}
                 </button>

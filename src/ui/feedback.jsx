@@ -28,14 +28,14 @@ export function ToastProvider({ children }) {
         createPortal(
           <div
             className="pointer-events-none fixed inset-x-0 z-[70] flex justify-center px-6"
-            style={{ bottom: 'calc(5.75rem + env(safe-area-inset-bottom))' }}
+            style={{ top: 'calc(env(safe-area-inset-top) + 12px)' }}
           >
             <div
               key={toast.key}
               role="status"
               className={cx(
-                'flex max-w-full animate-toast items-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium text-white shadow-pop',
-                toast.type === 'error' ? 'bg-danger' : 'bg-navy',
+                'flex max-w-full animate-toast items-center gap-2 rounded-full border border-white/20 px-4 py-2.5 text-sm font-medium text-white shadow-pop backdrop-blur-xl',
+                toast.type === 'error' ? 'bg-danger/90' : 'bg-navy/85',
               )}
             >
               {toast.type === 'error' ? (
@@ -61,8 +61,8 @@ function ConfirmDialog({ title, message, confirmText = 'אישור', cancelText 
   useBackClose(true, () => onDone(false));
   return createPortal(
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-5">
-      <div className="absolute inset-0 animate-fade bg-navy/40 backdrop-blur-[2px]" onClick={() => onDone(false)} />
-      <div role="alertdialog" aria-modal="true" aria-label={title} className="relative w-full max-w-sm animate-pop rounded-[18px] bg-white p-6 shadow-pop">
+      <div className="absolute inset-0 animate-fade bg-navy/30 backdrop-blur-[4px]" onClick={() => onDone(false)} />
+      <div role="alertdialog" aria-modal="true" aria-label={title} className="glass-strong relative w-full max-w-sm animate-pop rounded-[24px] p-6 shadow-pop">
         <h3 className="text-base font-semibold text-ink">{title}</h3>
         {message && <p className="mt-2 text-sm font-light leading-relaxed text-mute/80">{message}</p>}
         <div className="mt-6 flex gap-2">
@@ -71,13 +71,13 @@ function ConfirmDialog({ title, message, confirmText = 'אישור', cancelText 
             autoFocus
             onClick={() => onDone(true)}
             className={cx(
-              'flex-1 rounded-[11px] py-3 text-sm font-medium text-white',
-              danger ? 'bg-danger shadow-danger' : 'border border-gold/30 bg-navy shadow-btn',
+              'flex-1 rounded-[14px] py-3 text-sm font-medium text-white',
+              danger ? 'bg-danger shadow-danger' : 'glass-navy',
             )}
           >
             {confirmText}
           </button>
-          <button type="button" onClick={() => onDone(false)} className="flex-1 rounded-[11px] bg-canvas py-3 text-sm font-medium text-mute">
+          <button type="button" onClick={() => onDone(false)} className="flex-1 rounded-[14px] border border-white/70 bg-white/60 py-3 text-sm font-medium text-mute">
             {cancelText}
           </button>
         </div>

@@ -6,11 +6,13 @@
   html {
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
-    background: #f3f3f4;
+    background: #eef0f4;
   }
 
+  /* Transparent so the fixed "liquid" background layer shows through. */
   body {
-    @apply bg-canvas font-sans text-ink antialiased;
+    @apply font-sans text-ink antialiased;
+    background: transparent;
     -webkit-tap-highlight-color: transparent;
     min-height: 100dvh;
   }
@@ -47,8 +49,97 @@
 }
 
 @layer components {
+  /* ---------- liquid glass ----------
+     Blur (backdrop-filter) is costly on iPhone while scrolling, so it is used only on floating layers
+     (bottom bar, + button, sheets, dialogs, menus). Cards in the list are translucent without blur:
+     over the soft gradient background they read as glass at no scrolling cost. */
+  .liquid-bg {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(60% 42% at 100% 0%, rgba(110, 145, 215, 0.3), transparent 70%),
+      radial-gradient(48% 36% at 0% 30%, rgba(201, 164, 91, 0.22), transparent 70%),
+      radial-gradient(55% 40% at 95% 70%, rgba(150, 128, 205, 0.16), transparent 70%),
+      radial-gradient(65% 45% at 5% 100%, rgba(44, 95, 124, 0.18), transparent 70%),
+      linear-gradient(180deg, #f2f3f7 0%, #eceef3 100%);
+  }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.66);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    box-shadow:
+      0 8px 28px rgba(10, 31, 68, 0.07),
+      0 1px 3px rgba(10, 31, 68, 0.05),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  }
+
+  .glass {
+    background: rgba(255, 255, 255, 0.78);
+    -webkit-backdrop-filter: blur(22px) saturate(180%);
+    backdrop-filter: blur(22px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    box-shadow:
+      0 12px 40px rgba(10, 31, 68, 0.14),
+      0 2px 8px rgba(10, 31, 68, 0.06),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95),
+      inset 0 -1px 1px rgba(255, 255, 255, 0.35);
+  }
+
+  .glass-strong {
+    background: rgba(248, 249, 252, 0.95);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    backdrop-filter: blur(28px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+  }
+
+  /* Navy liquid drop (primary + button). */
+  .glass-navy {
+    background: linear-gradient(160deg, rgba(36, 70, 140, 0.92) 0%, rgba(10, 31, 68, 0.96) 60%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    backdrop-filter: blur(16px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    box-shadow:
+      0 10px 28px rgba(10, 31, 68, 0.4),
+      0 2px 6px rgba(10, 31, 68, 0.25),
+      inset 0 1px 0 rgba(255, 255, 255, 0.28),
+      inset 0 -2px 6px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Without blur (unsupported, or "reduce transparency"), floating glass must stay readable on its own. */
+  @media (prefers-reduced-transparency: reduce) {
+    .glass,
+    .glass-strong {
+      background: rgba(250, 251, 253, 0.98);
+    }
+  }
+
+  /* Glossy highlight on the top half of a drop. */
+  .sheen {
+    position: absolute;
+    inset: 1px 1px 50% 1px;
+    border-radius: inherit;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.38), rgba(255, 255, 255, 0));
+    pointer-events: none;
+  }
+
+  /* The sliding "droplet" behind the selected tab / segment. */
+  .liquid-pill {
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow:
+      0 3px 10px rgba(10, 31, 68, 0.12),
+      0 1px 2px rgba(10, 31, 68, 0.06),
+      inset 0 1px 0 #fff,
+      inset 0 -1px 0 rgba(10, 31, 68, 0.04);
+    transition: transform 0.42s cubic-bezier(0.34, 1.36, 0.64, 1);
+  }
+
   .field {
-    @apply w-full rounded-[10px] border border-line bg-white px-3.5 py-3 text-ink shadow-inset outline-none transition-colors duration-150 placeholder:text-mute/35 focus:border-gold/60 focus:ring-1 focus:ring-gold/25;
+    @apply w-full rounded-[12px] px-3.5 py-3 text-ink outline-none transition-colors duration-150 placeholder:text-mute/35 focus:border-gold/60 focus:ring-2 focus:ring-gold/20;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(208, 209, 211, 0.75);
+    box-shadow: inset 0 2px 4px rgba(10, 31, 68, 0.04);
   }
   .field-error {
     @apply border-danger/60 focus:border-danger/70 focus:ring-danger/20;

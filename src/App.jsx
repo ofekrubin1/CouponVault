@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './firebase';
-import { watchCoupons, watchMyFamilies, watchUserDoc } from './data';
+import { deleteCoupon, redeemCoupon, watchCoupons, watchMyFamilies, watchUserDoc } from './data';
+import { money } from './lib';
 import { DEFAULT_CATEGORIES } from './constants';
-import { ToastProvider, ConfirmProvider } from './ui/feedback';
+import { ToastProvider, ConfirmProvider, useConfirm, useToast } from './ui/feedback';
 import { Avatar, Spinner } from './ui/primitives';
 import { useBackClose } from './hooks/overlay';
 import { BottomNav, Fab, FamilySwitcher } from './components/Chrome';
@@ -30,6 +31,7 @@ export default function App() {
   return (
     <ToastProvider>
       <ConfirmProvider>
+        <div className="liquid-bg" aria-hidden />
         <Root />
       </ConfirmProvider>
     </ToastProvider>
@@ -115,6 +117,31 @@ function Main({ user, family, families, joinCode, ready }) {
   }, [sheet, coupons, current]);
 
   const open = (c) => setSheet({ kind: 'detail', id: c.id });
+  const toast = useToast();
+  const confirm = useConfirm();
+
+  // Swipe actions on a coupon row.
+  const use = async (c) => {
+    if (c.type === 'money') {
+      setSheet({ kind: 'detail', id: c.id, partial: true });
+      return;
+    }
+    const ok = await confirm({ title: `לסמן את "${c.title}" כמומש?`, message: 'הקופון יעבור לארכיון. אפשר להחזיר אותו משם.', confirmText: 'כן, מימשתי' });
+    if (!ok) return;
+    redeemCoupon(family.id, user, c, null);
+    toast('סומן כמומש ועבר לארכיון');
+  };
+  const remove = async (c) => {
+    const ok = await confirm({
+      title: 'מחיקת קופון',
+      message: `למחוק את "${c.title}"${c.type === 'money' ? ` (יתרה ${money(c.balance ?? c.value)})` : ''} לצמיתות?`,
+      confirmText: 'מחק',
+      danger: true,
+    });
+    if (!ok) return;
+    deleteCoupon(family.id, c.id);
+    toast('הקופון נמחק');
+  };
   const add = () => setSheet({ kind: 'form' });
   const go = (t) => {
     setTab(t);
@@ -124,7 +151,7 @@ function Main({ user, family, families, joinCode, ready }) {
 
   return (
     <>
-      <div className="mx-auto min-h-[100dvh] max-w-lg px-5 pb-32 pt-12" data-family-id={family.id}>
+      <div className="mx-auto min-h-[100dvh] max-w-lg overflow-x-clip px-5 pb-44 pt-12" data-family-id={family.id}>
         <header className="mb-4 flex items-end justify-between gap-3">
           <div className="min-w-0 flex-1">
             <p className="eyebrow">{tab === 'home' ? meta.eyebrow : `${meta.eyebrow} · ${family.name}`}</p>
@@ -152,7 +179,7 @@ function Main({ user, family, families, joinCode, ready }) {
         {coupons === null ? (
           <Spinner className="flex justify-center py-20" />
         ) : tab === 'home' ? (
-          <Home coupons={coupons} family={family} onOpen={open} onAdd={add} />
+          <Home coupons={coupons} family={family} onOpen={open} onAdd={add} onUse={use} onDelete={remove} />
         ) : tab === 'archive' ? (
           <Archive coupons={coupons} family={family} onOpen={open} />
         ) : (
@@ -164,7 +191,14 @@ function Main({ user, family, families, joinCode, ready }) {
       <BottomNav tab={tab} onChange={go} />
 
       {sheet?.kind === 'detail' && current && (
-        <CouponDetail coupon={current} family={family} user={user} onClose={() => setSheet(null)} onEdit={() => setSheet({ kind: 'form', id: current.id })} />
+        <CouponDetail
+          coupon={current}
+          family={family}
+          user={user}
+          startPartial={!!sheet.partial}
+          onClose={() => setSheet(null)}
+          onEdit={() => setSheet({ kind: 'form', id: current.id })}
+        />
       )}
       {sheet?.kind === 'form' && (
         <CouponForm

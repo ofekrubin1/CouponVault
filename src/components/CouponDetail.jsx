@@ -24,6 +24,10 @@ function Row({ icon: Icon, label, children }) {
   );
 }
 
+// Side notches cut out of the hero ticket (a mask, so whatever is behind shows through).
+const HERO_NOTCHES = 'radial-gradient(circle 12px at 0 50%, transparent 11.5px, #000 12px), radial-gradient(circle 12px at 100% 50%, transparent 11.5px, #000 12px)';
+const HERO_MASK = { WebkitMaskImage: HERO_NOTCHES, maskImage: HERO_NOTCHES, WebkitMaskComposite: 'source-in', maskComposite: 'intersect' };
+
 /** Navy "ticket" with the coupon's value. */
 function Hero({ coupon, alertDays }) {
   const isMoney = coupon.type === 'money';
@@ -34,11 +38,16 @@ function Hero({ coupon, alertDays }) {
   const pct = isMoney && coupon.value > 0 ? Math.max(0, Math.min(100, ((coupon.balance ?? 0) / coupon.value) * 100)) : 0;
 
   return (
-    <div className="relative overflow-hidden rounded-[18px] bg-gradient-to-br from-navy-light via-navy to-[#071633] p-5 text-white shadow-hero" data-testid="coupon-hero">
-      <span className="pointer-events-none absolute -left-10 -top-16 h-44 w-44 rounded-full bg-gold/15 blur-2xl" />
+    <div className="rounded-[22px] shadow-hero">
+    <div
+      className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-[#24468C] via-navy to-[#071633] p-5 text-white"
+      style={HERO_MASK}
+      data-testid="coupon-hero"
+    >
+      <span className="pointer-events-none absolute -left-10 -top-16 h-44 w-44 rounded-full bg-[radial-gradient(circle,rgba(201,164,91,0.35),transparent_68%)]" />
+      <span className="pointer-events-none absolute -bottom-20 -right-10 h-48 w-48 rounded-full bg-[radial-gradient(circle,rgba(110,150,230,0.3),transparent_68%)]" />
+      <span className="pointer-events-none absolute inset-x-0 top-0 h-1/2 rounded-t-[22px] bg-gradient-to-b from-white/[0.12] to-transparent" />
       <span className="pointer-events-none absolute inset-x-0 bottom-0 h-[2px] bg-gradient-to-r from-transparent via-gold/70 to-transparent" />
-      <span className="pointer-events-none absolute -right-3 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full bg-white" />
-      <span className="pointer-events-none absolute -left-3 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full bg-white" />
 
       <div className="relative flex items-center gap-2 text-white/70">
         <CatIcon className="h-4 w-4 text-gold" strokeWidth={1.5} />
@@ -94,13 +103,14 @@ function Hero({ coupon, alertDays }) {
         {coupon.expiry && !used && <span className="font-light text-white/40">{formatDate(coupon.expiry)}</span>}
       </div>
     </div>
+    </div>
   );
 }
 
-export default function CouponDetail({ coupon, family, user, onClose, onEdit }) {
+export default function CouponDetail({ coupon, family, user, onClose, onEdit, startPartial = false }) {
   const toast = useToast();
   const confirm = useConfirm();
-  const [partial, setPartial] = useState(false);
+  const [partial, setPartial] = useState(startPartial && coupon.type === 'money');
   const [amount, setAmount] = useState('');
   const [err, setErr] = useState('');
 
@@ -183,9 +193,18 @@ export default function CouponDetail({ coupon, family, user, onClose, onEdit }) 
           <Button variant="primary" onClick={usePartial} icon={Check} data-testid="partial-confirm">אישור</Button>
           <Button variant="soft" onClick={() => { setPartial(false); setErr(''); setAmount(''); }}>ביטול</Button>
         </div>
-        <p className={cx('text-[12px]', err ? 'font-medium text-danger' : 'font-light text-mute/60')} role={err ? 'alert' : undefined}>
-          {err || (left != null && left >= 0 ? `יישארו ${money(left)} בשובר` : `יתרה נוכחית: ${money(coupon.balance)}`)}
-        </p>
+        <div className="flex items-center justify-between gap-2">
+          <p className={cx('text-[12px]', err ? 'font-medium text-danger' : 'font-light text-mute/60')} role={err ? 'alert' : undefined}>
+            {err || (left != null && left >= 0 ? `יישארו ${money(left)} בשובר` : `יתרה נוכחית: ${money(coupon.balance)}`)}
+          </p>
+          <button
+            type="button"
+            onClick={() => { setAmount(String(coupon.balance ?? 0)); setErr(''); }}
+            className="shrink-0 rounded-full border border-gold/30 bg-gold/10 px-2.5 py-1 text-[11px] font-medium text-gold-deep"
+          >
+            כל היתרה
+          </button>
+        </div>
       </div>
     );
   } else {
@@ -210,10 +229,10 @@ export default function CouponDetail({ coupon, family, user, onClose, onEdit }) 
       footer={footer}
       actions={
         <>
-          <button type="button" onClick={onEdit} className="rounded-[10px] bg-navy/5 p-2 text-navy/60 hover:bg-navy/10" aria-label="עריכה">
+          <button type="button" onClick={onEdit} className="glass-card rounded-full p-2 text-navy/60" aria-label="עריכה">
             <Pencil className="h-4 w-4" strokeWidth={1.75} />
           </button>
-          <button type="button" onClick={remove} className="rounded-[10px] bg-danger/5 p-2 text-danger/80 hover:bg-danger/10" aria-label="מחיקה">
+          <button type="button" onClick={remove} className="rounded-full border border-danger/15 bg-danger/[0.06] p-2 text-danger/80" aria-label="מחיקה">
             <Trash2 className="h-4 w-4" strokeWidth={1.75} />
           </button>
         </>
@@ -226,20 +245,20 @@ export default function CouponDetail({ coupon, family, user, onClose, onEdit }) 
           <button
             type="button"
             onClick={copyCode}
-            className="flex w-full items-center justify-between gap-3 rounded-[14px] border-[1.5px] border-dashed border-gold/60 bg-gold/[0.06] px-4 py-3.5 active:bg-gold/10"
+            className="flex w-full items-center justify-between gap-3 rounded-[18px] border-[1.5px] border-dashed border-gold/60 bg-white/50 px-4 py-3.5 active:bg-gold/10"
             data-testid="copy-code"
           >
             <span className="min-w-0">
               <span className="block text-right text-[10px] font-medium uppercase tracking-widest text-gold-deep/70">קוד קופון</span>
               <span dir="ltr" className="block truncate text-left font-mono text-lg font-semibold tracking-[0.15em] text-navy">{coupon.code}</span>
             </span>
-            <span className="flex shrink-0 items-center gap-1.5 rounded-[10px] bg-white px-3 py-2 text-xs font-medium text-navy shadow-btn2">
+            <span className="flex shrink-0 items-center gap-1.5 rounded-[12px] bg-white/80 px-3 py-2 text-xs font-medium text-navy shadow-btn2">
               <Copy className="h-3.5 w-3.5" strokeWidth={1.75} /> העתק
             </span>
           </button>
         )}
 
-        <div className="divide-y divide-canvas rounded-[14px] bg-white px-4 shadow-card">
+        <div className="glass-card divide-y divide-navy/[0.05] rounded-[18px] px-4">
           <Row icon={Store} label="איפה מממשים">{coupon.store}</Row>
           {coupon.category && <Row icon={Tag} label="קטגוריה">{coupon.category}</Row>}
           <Row icon={Calendar} label="תוקף">{coupon.expiry ? formatDate(coupon.expiry) : 'ללא תאריך תפוגה'}</Row>
@@ -253,7 +272,7 @@ export default function CouponDetail({ coupon, family, user, onClose, onEdit }) 
         </div>
 
         {usages.length > 0 && (
-          <div className="rounded-[14px] bg-white p-4 shadow-card" data-testid="usage-history">
+          <div className="glass-card rounded-[18px] p-4" data-testid="usage-history">
             <div className="mb-2 flex items-center justify-between">
               <h3 className="section-title">היסטוריית שימוש</h3>
               <button
@@ -264,7 +283,7 @@ export default function CouponDetail({ coupon, family, user, onClose, onEdit }) 
                 <Undo2 className="h-3 w-3" strokeWidth={2} /> בטל אחרון
               </button>
             </div>
-            <ul className="divide-y divide-canvas">
+            <ul className="divide-y divide-navy/[0.05]">
               {[...usages].reverse().map((us) => (
                 <li key={`${us.at}-${us.by}`} className="flex items-center justify-between py-2.5 text-sm">
                   <span className="text-mute/80">

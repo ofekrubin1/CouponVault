@@ -22,7 +22,7 @@ function SectionTitle({ icon: Icon, children, aside }) {
   );
 }
 
-const iconBtn = 'flex h-9 w-9 items-center justify-center rounded-[10px] bg-white text-navy/70 shadow-btn2 active:scale-95';
+const iconBtn = 'flex h-9 w-9 items-center justify-center rounded-full border border-white/80 bg-white/70 text-navy/70 shadow-btn2 active:scale-95';
 
 export default function Settings({ user, family, families }) {
   const toast = useToast();
@@ -114,7 +114,7 @@ export default function Settings({ user, family, families }) {
             <button type="button" className="rounded-[10px] bg-navy px-3 text-white shadow-btn" onClick={saveName} aria-label="שמור">
               <Check className="h-4 w-4" strokeWidth={2} />
             </button>
-            <button type="button" className="rounded-[10px] bg-canvas px-3 text-mute" onClick={() => { setEditName(false); setName(family.name); }} aria-label="ביטול">
+            <button type="button" className="rounded-[12px] border border-white/70 bg-white/55 px-3 text-mute" onClick={() => { setEditName(false); setName(family.name); }} aria-label="ביטול">
               <X className="h-4 w-4" strokeWidth={2} />
             </button>
           </div>
@@ -130,7 +130,7 @@ export default function Settings({ user, family, families }) {
           </div>
         )}
 
-        <div className="mt-4 rounded-[12px] bg-gradient-to-b from-soft to-canvas p-4 ring-1 ring-navy/[0.04]">
+        <div className="mt-4 rounded-[16px] border border-white/80 bg-white/45 p-4 shadow-inset">
           <div className="flex items-center gap-1.5 text-[11px] font-medium text-mute/70">
             <KeyRound className="h-3.5 w-3.5 text-gold-dark" strokeWidth={1.75} /> קוד הזמנה להצטרפות
           </div>
@@ -158,7 +158,7 @@ export default function Settings({ user, family, families }) {
         <SectionTitle icon={Users} aside={<span className="text-[11px] font-light text-gold-dark">{members.length}</span>}>
           חברים
         </SectionTitle>
-        <ul className="divide-y divide-canvas" data-testid="members">
+        <ul className="divide-y divide-navy/[0.05]" data-testid="members">
           {members.map((m) => (
             <li key={m.uid} className="flex items-center gap-3 py-2.5">
               <Avatar name={m.name} photo={m.photo} size={38} />
@@ -180,7 +180,7 @@ export default function Settings({ user, family, families }) {
         <button
           type="button"
           onClick={leave}
-          className="mt-3 w-full rounded-[11px] border border-danger/20 bg-white py-2.5 text-sm font-medium text-danger shadow-btn2"
+          className="mt-3 w-full rounded-[14px] border border-danger/20 bg-white/60 py-2.5 text-sm font-medium text-danger shadow-btn2"
         >
           עזיבת המשפחה
         </button>
@@ -210,7 +210,7 @@ export default function Settings({ user, family, families }) {
                 key={c}
                 className={cx(
                   'flex items-center gap-1.5 rounded-[9px] border px-2.5 py-1.5 text-[13px]',
-                  isCustom ? 'border-gold/40 bg-gold/[0.06] text-ink' : 'border-line bg-soft text-mute',
+                  isCustom ? 'border-gold/40 bg-gold/[0.06] text-ink' : 'border-white/80 bg-white/55 text-mute',
                 )}
               >
                 <Icon className="h-3.5 w-3.5" style={{ color }} strokeWidth={1.75} />
@@ -248,7 +248,7 @@ export default function Settings({ user, family, families }) {
                   type="button"
                   className={cx(
                     'flex w-full items-center gap-3 rounded-[11px] px-3 py-2.5 text-right transition-colors',
-                    on ? 'bg-navy text-white shadow-btn' : 'bg-soft text-ink ring-1 ring-line/60',
+                    on ? 'glass-navy text-white' : 'border border-white/80 bg-white/55 text-ink',
                   )}
                   onClick={() => {
                     if (!on) {

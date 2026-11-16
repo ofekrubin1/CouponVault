@@ -43,14 +43,44 @@ test('T30 category chips filter the list and show what is left to spend', async 
     { title: 'חולצה', store: 'קסטרו', category: 'אופנה', type: 'percent', value: 20 },
   ]);
   await expect(page.getByTestId('summary-balance')).toHaveText('₪490');
-  await page.locator('[data-testid="category-chip"][data-category="מסעדות"]').click();
   const list = page.getByTestId('coupon-list').getByTestId('coupon-ticket');
+  const chip = (group, value) => page.locator(`[data-testid="filter-chip"][data-group="${group}"][data-value="${value}"]`);
+  await page.getByTestId('filter-button').click();
+  await expect(page.getByTestId('filter-panel')).toBeVisible();
+  await chip('cat', 'מסעדות').click();
   await expect(list).toHaveCount(2);
   await expect(page.getByTestId('filtered-balance')).toContainText('₪190');
-  await page.locator('[data-testid="category-chip"][data-category="אופנה"]').click();
+  // several tags at once
+  await chip('cat', 'אופנה').click();
+  await expect(list).toHaveCount(3);
+  await expect(page.getByTestId('filter-count')).toHaveText('2');
+  await chip('cat', 'מסעדות').click();
   await expect(list).toHaveCount(1);
   await expect(list.first()).toHaveAttribute('data-title', 'חולצה');
-  await page.locator('[data-testid="category-chip"][data-category=""]').click();
+  // closing the panel keeps the filter, shown as a removable chip
+  await page.getByRole('button', { name: 'הצג 1 קופונים' }).click();
+  await expect(page.getByTestId('filter-panel')).toBeHidden();
+  await page.getByTestId('active-filters').getByRole('button', { name: 'הסר סינון אופנה' }).click();
+  await expect(list).toHaveCount(4);
+  await expect(page.getByTestId('filter-count')).toHaveCount(0);
+});
+
+test('T30b filter by type and "expiring soon", then clear everything', async ({ page }) => {
+  const { familyId } = await setup(page);
+  await seed(page, familyId, [
+    { title: 'שובר דחוף', store: 'a', type: 'money', value: 100, expiry: isoIn(3) },
+    { title: 'שובר רחוק', store: 'b', type: 'money', value: 50, expiry: isoIn(200) },
+    { title: 'הנחה דחופה', store: 'c', type: 'percent', value: 10, expiry: isoIn(5) },
+    { title: 'סתם קופון', store: 'd', type: 'other' },
+  ]);
+  const list = page.getByTestId('coupon-list').getByTestId('coupon-ticket');
+  await page.getByTestId('filter-button').click();
+  await page.locator('[data-testid="filter-chip"][data-group="type"][data-value="money"]').click();
+  await expect(list).toHaveCount(2);
+  await page.getByRole('switch', { name: 'רק פגים בקרוב' }).click();
+  await expect(list).toHaveCount(1);
+  await expect(list.first()).toHaveAttribute('data-title', 'שובר דחוף');
+  await page.getByTestId('filter-panel').getByRole('button', { name: 'נקה' }).click();
   await expect(list).toHaveCount(4);
 });
 

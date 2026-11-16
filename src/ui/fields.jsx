@@ -56,7 +56,7 @@ export const TextArea = forwardRef(function TextArea({ className, ...props }, re
 export function DateInput({ id, value, onChange, min, placeholder = 'בחר תאריך' }) {
   return (
     <div className="relative h-[50px] w-full min-w-0">
-      <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[10px] border border-line bg-white shadow-inset">
+      <div className="field pointer-events-none absolute inset-0 overflow-hidden !p-0">
         <span className={cx('absolute inset-y-0 left-3.5 right-10 flex items-center truncate text-base', value ? 'text-ink' : 'text-mute/35')}>
           {value ? formatDate(value) : placeholder}
         </span>
@@ -65,7 +65,7 @@ export function DateInput({ id, value, onChange, min, placeholder = 'בחר תא
         <button
           type="button"
           onClick={() => onChange('')}
-          className="absolute right-2.5 top-1/2 z-10 -translate-y-1/2 rounded-full p-1 text-mute/50 hover:bg-canvas"
+          className="absolute right-2.5 top-1/2 z-10 -translate-y-1/2 rounded-full p-1 text-mute/50 hover:bg-white/60"
           aria-label="נקה תאריך"
         >
           <X className="h-4 w-4" strokeWidth={1.75} />

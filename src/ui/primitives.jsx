@@ -3,14 +3,14 @@ import { categoryStyle } from '../constants';
 
 export const cx = (...a) => a.filter(Boolean).join(' ');
 
-/** White elevated card (TripFlow "PremiumCard"). `gold` adds the thin gold line at the bottom. */
+/** Translucent "glass" card (TripFlow's PremiumCard, liquid style). `gold` adds the thin gold line at the bottom. */
 export function Card({ children, className, gold = false, onClick, ...rest }) {
   const Tag = onClick ? 'button' : 'div';
   return (
     <Tag
       onClick={onClick}
       className={cx(
-        'relative block w-full rounded-[14px] bg-white p-5 text-right shadow-card transition-transform duration-150',
+        'glass-card relative block w-full rounded-[18px] p-5 text-right transition-transform duration-150',
         onClick && 'active:scale-[0.99]',
         className,
       )}
@@ -25,11 +25,11 @@ export function Card({ children, className, gold = false, onClick, ...rest }) {
 }
 
 const BTN = {
-  primary: 'bg-navy text-white border border-gold/30 shadow-btn',
-  secondary: 'bg-white text-navy border border-gold/40 shadow-btn2',
+  primary: 'glass-navy text-white',
+  secondary: 'bg-white/75 text-navy border border-gold/40 shadow-btn2',
   gold: 'bg-gradient-to-b from-gold to-gold-dark text-white border border-gold/20 shadow-goldbtn',
-  danger: 'bg-white text-danger border border-danger/20 shadow-danger',
-  soft: 'bg-canvas text-mute border border-transparent',
+  danger: 'bg-white/75 text-danger border border-danger/20 shadow-danger',
+  soft: 'bg-white/50 text-mute border border-white/70',
 };
 
 export const Button = forwardRef(function Button(
@@ -40,13 +40,14 @@ export const Button = forwardRef(function Button(
     <button
       ref={ref}
       className={cx(
-        'inline-flex items-center justify-center gap-2 rounded-[12px] font-medium transition-all duration-100 active:translate-y-[0.5px] active:opacity-90 disabled:opacity-50',
+        'relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-[14px] font-medium transition-all duration-100 active:translate-y-[0.5px] active:opacity-90 disabled:opacity-50',
         size === 'sm' ? 'px-3 py-2 text-xs' : size === 'lg' ? 'px-5 py-3.5 text-[15px]' : 'px-5 py-3 text-sm',
         BTN[variant],
         className,
       )}
       {...props}
     >
+      {variant === 'primary' && <span className="sheen" />}
       {Icon && <Icon className={size === 'sm' ? 'h-3.5 w-3.5' : 'h-4 w-4'} strokeWidth={size === 'sm' ? 2 : 1.75} />}
       {children}
     </button>
@@ -102,7 +103,7 @@ export function Spinner({ full = false, className }) {
 export function EmptyState({ icon: Icon, title, text, action }) {
   return (
     <div className="flex flex-col items-center px-6 py-14 text-center">
-      <span className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-navy/5 shadow-card">
+      <span className="glass-card mb-5 flex h-16 w-16 items-center justify-center rounded-[20px]">
         <Icon className="h-7 w-7 text-navy/40" strokeWidth={1.5} />
       </span>
       <h2 className="mb-1 text-lg font-semibold text-ink">{title}</h2>
@@ -134,10 +135,20 @@ export function Avatar({ name, photo, size = 36 }) {
   );
 }
 
-/** iOS-like segmented control. */
+/** iOS-like segmented control; the selected segment is a "droplet" that slides between options (RTL). */
 export function Segmented({ value, onChange, options, className, name }) {
+  const idx = Math.max(0, options.findIndex((o) => o.key === value));
   return (
-    <div role="radiogroup" aria-label={name} className={cx('flex rounded-[12px] bg-navy/[0.05] p-1', className)}>
+    <div
+      role="radiogroup"
+      aria-label={name}
+      className={cx('relative flex rounded-[14px] border border-white/70 bg-white/40 p-1 shadow-inset', className)}
+    >
+      <span
+        aria-hidden
+        className="liquid-pill absolute bottom-1 top-1 rounded-[11px]"
+        style={{ right: 4, width: `calc((100% - 8px) / ${options.length})`, transform: `translateX(${-idx * 100}%)` }}
+      />
       {options.map((o) => {
         const on = o.key === value;
         return (
@@ -147,10 +158,7 @@ export function Segmented({ value, onChange, options, className, name }) {
             role="radio"
             aria-checked={on}
             onClick={() => onChange(o.key)}
-            className={cx(
-              'flex-1 rounded-[9px] px-2 py-2 text-[13px] font-medium transition-all duration-150',
-              on ? 'bg-white text-navy shadow-btn2' : 'text-mute/60',
-            )}
+            className={cx('relative z-[1] flex-1 rounded-[11px] px-2 py-2 text-[13px] font-medium transition-colors duration-200', on ? 'text-navy' : 'text-mute/60')}
           >
             {o.label}
           </button>

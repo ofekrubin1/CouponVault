@@ -10,14 +10,21 @@ const NAV = [
   { key: 'settings', icon: Settings, label: 'הגדרות' },
 ];
 
+/** Floating glass capsule; the selected tab is a droplet that slides between items. */
 export function BottomNav({ tab, onChange }) {
+  const idx = Math.max(0, NAV.findIndex((n) => n.key === tab));
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-line/70 bg-white/95 shadow-nav backdrop-blur-md"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      className="fixed inset-x-0 z-40 px-4"
+      style={{ bottom: 'calc(env(safe-area-inset-bottom) + 10px)' }}
       aria-label="ניווט"
     >
-      <div className="mx-auto flex max-w-lg items-center justify-around px-2 pb-1.5 pt-2">
+      <div className="glass relative mx-auto flex max-w-md items-stretch rounded-[26px] p-1.5">
+        <span
+          aria-hidden
+          className="liquid-pill absolute bottom-1.5 top-1.5 rounded-[20px]"
+          style={{ right: 6, width: `calc((100% - 12px) / ${NAV.length})`, transform: `translateX(${-idx * 100}%)` }}
+        />
         {NAV.map(({ key, icon: Icon, label }) => {
           const on = tab === key;
           return (
@@ -26,16 +33,11 @@ export function BottomNav({ tab, onChange }) {
               type="button"
               onClick={() => onChange(key)}
               aria-current={on ? 'page' : undefined}
-              className="flex flex-col items-center rounded-xl px-1"
+              className="relative z-[1] flex flex-1 flex-col items-center gap-0.5 rounded-[20px] py-2"
             >
-              <span
-                className={cx(
-                  'flex flex-col items-center gap-0.5 rounded-xl px-5 py-1.5 transition-all duration-200',
-                  on ? 'bg-navy/[0.07] shadow-[0_0_0_1px_rgba(10,31,68,0.08),inset_0_1px_2px_rgba(255,255,255,0.6)]' : '',
-                )}
-              >
-                <Icon className={cx('h-5 w-5 transition-colors', on ? 'text-navy' : 'text-mute/60')} strokeWidth={on ? 2 : 1.5} />
-                <span className={cx('text-[10px] tracking-wide', on ? 'font-medium text-navy' : 'font-light text-mute/50')}>{label}</span>
+              <Icon className={cx('h-5 w-5 transition-colors duration-200', on ? 'text-navy' : 'text-mute/60')} strokeWidth={on ? 2 : 1.5} />
+              <span className={cx('text-[10px] tracking-wide transition-colors duration-200', on ? 'font-semibold text-navy' : 'font-light text-mute/60')}>
+                {label}
               </span>
             </button>
           );
@@ -45,7 +47,7 @@ export function BottomNav({ tab, onChange }) {
   );
 }
 
-/** Floating "+" pinned above the bottom bar (bottom-left, like TripFlow). */
+/** Floating liquid "+" pinned above the bottom bar (bottom-left, like TripFlow). */
 export function Fab({ onClick }) {
   return (
     <button
@@ -53,10 +55,11 @@ export function Fab({ onClick }) {
       onClick={onClick}
       aria-label="הוספת קופון"
       data-testid="fab-add"
-      className="fixed left-5 z-40 flex h-14 w-14 items-center justify-center rounded-full border border-gold/30 bg-gradient-to-b from-navy-light to-navy text-white shadow-fab transition-transform duration-150 active:scale-90"
-      style={{ bottom: 'calc(5.25rem + env(safe-area-inset-bottom))' }}
+      className="glass-navy fixed left-5 z-40 flex h-14 w-14 items-center justify-center rounded-full text-white transition-transform duration-150 active:scale-90"
+      style={{ bottom: 'calc(env(safe-area-inset-bottom) + 92px)' }}
     >
-      <Plus className="h-6 w-6" strokeWidth={2} />
+      <span className="sheen" />
+      <Plus className="relative h-6 w-6" strokeWidth={2.2} />
     </button>
   );
 }
@@ -97,7 +100,7 @@ export function FamilySwitcher({ user, family, families, onManage }) {
         data-testid="family-switcher"
       >
         <span className="truncate">{family.name}</span>
-        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-navy/5">
+        <span className="glass-card flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
           <ChevronDown className={cx('h-4 w-4 text-navy/60 transition-transform', open && 'rotate-180')} strokeWidth={2} />
         </span>
       </button>
@@ -107,7 +110,7 @@ export function FamilySwitcher({ user, family, families, onManage }) {
             <div className="fixed inset-0 z-[55]" onClick={() => setOpen(false)} />
             <div
               role="menu"
-              className="fixed z-[56] w-64 animate-pop overflow-hidden rounded-[14px] border border-line bg-white py-1.5 shadow-pop"
+              className="glass fixed z-[56] w-64 animate-pop overflow-hidden rounded-[18px] py-1.5"
               style={{ top: pos.top, right: pos.right }}
             >
               <p className="px-3.5 pb-1 pt-1.5 text-[10px] font-medium uppercase tracking-widest text-mute/50">המשפחות שלי</p>
@@ -116,7 +119,7 @@ export function FamilySwitcher({ user, family, families, onManage }) {
                   key={f.id}
                   type="button"
                   role="menuitem"
-                  className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-right text-sm text-ink hover:bg-canvas"
+                  className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-right text-sm text-ink hover:bg-white/50"
                   onClick={() => {
                     setOpen(false);
                     if (f.id !== family.id) setCurrentFamily(user.uid, f.id);
@@ -127,11 +130,11 @@ export function FamilySwitcher({ user, family, families, onManage }) {
                   {f.id === family.id && <Check className="h-4 w-4 text-gold" strokeWidth={2} />}
                 </button>
               ))}
-              <div className="mx-2 my-1 h-px bg-canvas" />
+              <div className="mx-2 my-1 h-px bg-navy/[0.06]" />
               <button
                 type="button"
                 role="menuitem"
-                className="w-full px-3.5 py-2.5 text-right text-sm font-medium text-gold-dark hover:bg-canvas"
+                className="w-full px-3.5 py-2.5 text-right text-sm font-medium text-gold-dark hover:bg-white/50"
                 onClick={() => {
                   setOpen(false);
                   onManage();
