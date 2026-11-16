@@ -122,3 +122,22 @@ test('T11 several families: switcher in the header keeps their coupons apart', a
   await expect(page.getByTestId('family-switcher')).toContainText('בית');
   await expect(ticket(page, 'קופון של הבית')).toBeVisible();
 });
+
+test('T54 joining succeeds on the first try even when the phone is slow to update its family list', async ({ page, browser }, testInfo) => {
+  await setup(page, { family: 'משפחה איטית' });
+  const code = await inviteCode(page);
+  const b = await secondPhone(browser, testInfo);
+  // the joining phone receives family-list updates 20s late (a slow cold start)
+  await b.page.addInitScript(() => {
+    window.__cvFamiliesDelay = 20000;
+  });
+  await login(b.page, { name: 'אישה' });
+  await expect(b.page.getByRole('button', { name: /הצטרפות בקוד/ })).toBeVisible({ timeout: 30000 });
+  await joinWithCode(b.page, code);
+  await expect(b.page.getByRole('status')).toHaveText('הצטרפת ל"משפחה איטית" 🎉', { timeout: 15000 });
+  await expect(b.page.getByRole('alert')).toHaveCount(0);
+  // the inviting phone sees the new member
+  await tab(page, 'הגדרות');
+  await expect(page.getByTestId('members').getByText('אישה')).toBeVisible();
+  await b.ctx.close();
+});

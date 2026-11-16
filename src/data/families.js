@@ -1,5 +1,5 @@
 // Families, membership and invite codes.
-import { arrayRemove, arrayUnion, collection, deleteField, doc, getDoc, query, serverTimestamp, updateDoc, where, writeBatch } from 'firebase/firestore';
+import { arrayRemove, arrayUnion, collection, deleteField, doc, getDocFromServer, query, serverTimestamp, updateDoc, where, writeBatch } from 'firebase/firestore';
 import { db } from '@/services/firebase';
 import { DEFAULT_ALERT_DAYS, INVITE_CODE_LENGTH } from '@/domain/constants';
 import { makeInviteCode, memberInfoOf } from '@/domain/family';
@@ -15,6 +15,11 @@ const inviteDoc = (code) => doc(db, 'invites', code);
  */
 export function watchMyFamilies(uid, cb, onError) {
   const q = query(collection(db, 'families'), where('members', 'array-contains', uid));
+  // Tests can make this listener lag (like a phone on a slow first connection). Not in production builds.
+  if (import.meta.env.MODE === 'emulator' && window.__cvFamiliesDelay) {
+    const deliver = cb;
+    cb = (list) => setTimeout(() => deliver(list), window.__cvFamiliesDelay);
+  }
   return liveSnapshot(
     q,
     { includeMetadataChanges: true },
@@ -44,33 +49,74 @@ export function createFamily(user, name) {
   return ref.id;
 }
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/** Read a document from the server (never a possibly stale local copy), retrying a slow connection. */
+async function readFromServer(ref, attempts = 3) {
+  let last;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await withTimeout(getDocFromServer(ref), 8000);
+    } catch (e) {
+      last = e;
+      if (e?.code === 'permission-denied') throw e;
+      await sleep(600);
+    }
+  }
+  throw last;
+}
+
+const JOIN_CONFIRM_MS = 30000;
+
 /**
- * Looks the code up (needs a connection) and asks to join. Returns the family id; the family shows up in
- * watchMyFamilies once the server accepts (the caller then selects it). Throws Error with a Hebrew message
- * when the code is unknown.
+ * Join a family with an invite code. Resolves { id, name } once the server has really added us, or throws an
+ * Error with a Hebrew message. Doesn't depend on the families listener (which can lag on a cold start); it
+ * asks the server directly: as soon as we're a member we're allowed to read the family.
  */
 export async function joinFamily(user, rawCode) {
   const code = rawCode.trim().toUpperCase();
   if (code.length !== INVITE_CODE_LENGTH) throw new Error('קוד הזמנה הוא 6 תווים');
+
   let inv;
   try {
-    inv = await withTimeout(getDoc(inviteDoc(code)), 10000);
+    inv = await readFromServer(inviteDoc(code));
   } catch {
     throw new Error('אין חיבור לאינטרנט. נסה שוב');
   }
   if (!inv.exists()) throw new Error('הקוד לא נמצא. בדוק שהקלדת נכון');
   const { familyId } = inv.data();
+  const ref = familyDoc(familyId);
+
+  // Already a member (e.g. a second tap)? Then there's nothing to write.
+  try {
+    const mine = await withTimeout(getDocFromServer(ref), 8000);
+    if (mine.exists()) return { id: familyId, name: mine.data().name };
+  } catch {
+    /* not a member yet (permission denied) or slow: go on and join */
+  }
+
   // A non-member can't read the family, so the update is built blindly; the rules check that it only
   // appends us and that the code is valid.
-  background(
-    updateDoc(familyDoc(familyId), {
-      members: arrayUnion(user.uid),
-      [`memberInfo.${user.uid}`]: memberInfoOf(user),
-      lastJoinCode: code,
-    }),
-    'join family',
-  );
-  return familyId;
+  let rejected = null;
+  updateDoc(ref, { members: arrayUnion(user.uid), [`memberInfo.${user.uid}`]: memberInfoOf(user), lastJoinCode: code }).catch((e) => {
+    rejected = e;
+  });
+
+  const deadline = Date.now() + JOIN_CONFIRM_MS;
+  while (Date.now() < deadline) {
+    if (rejected) {
+      console.error('[join family]', rejected);
+      throw new Error(rejected.code === 'permission-denied' ? 'הקוד כבר לא בתוקף. בקש קוד חדש' : 'ההצטרפות נכשלה. נסה שוב');
+    }
+    try {
+      const snap = await withTimeout(getDocFromServer(ref), 8000);
+      if (snap.exists()) return { id: familyId, name: snap.data().name };
+    } catch {
+      /* not accepted yet: keep checking */
+    }
+    await sleep(700);
+  }
+  throw new Error('החיבור איטי. ההצטרפות תושלם לבד כשהחיבור ישתפר');
 }
 
 export const updateFamily = (familyId, data) => background(updateDoc(familyDoc(familyId), data), 'update family');

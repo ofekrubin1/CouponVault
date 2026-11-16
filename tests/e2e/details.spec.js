@@ -131,3 +131,23 @@ test('T52 a coupon can be marked physical (digital by default) and changed back'
   await expect(ticket(page, 'תו מודפס').getByTestId('physical-badge')).toHaveCount(0);
   await expect.poll(async () => (await serverCoupons(page, familyId))[0]?.format).toBe('digital');
 });
+
+test('T53 the new-coupon form fits one screen; "more details" makes it grow', async ({ page }) => {
+  await setup(page);
+  await page.getByTestId('fab-add').click();
+  const s = sheet(page, 'קופון חדש');
+  await page.waitForTimeout(400);
+  const body = s.locator('.overflow-y-auto');
+  const fits = () => body.evaluate((el) => el.scrollHeight <= el.clientHeight + 2);
+  expect(await fits()).toBe(true);
+  // amount and expiry on one row
+  const value = await s.locator('[data-field="value"]').boundingBox();
+  const expiry = await s.locator('[data-field="expiry"]').boundingBox();
+  expect(Math.abs(value.y - expiry.y)).toBeLessThan(2);
+  // categories in at most two rows
+  const rows = await s.locator('[data-field="category"] button').evaluateAll((els) => new Set(els.map((e) => Math.round(e.getBoundingClientRect().top))).size);
+  expect(rows).toBeLessThanOrEqual(2);
+  await s.getByRole('button', { name: 'פרטים נוספים' }).click();
+  await expect(s.getByLabel('הערות')).toBeAttached();
+  expect(await fits()).toBe(false);
+});

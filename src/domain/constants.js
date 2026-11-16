@@ -6,9 +6,9 @@ export const DEFAULT_CATEGORIES = ['מסעדות', 'סופרמרקט', 'אופנ
 export const NO_CATEGORY = 'ללא קטגוריה';
 
 export const COUPON_TYPES = [
-  { key: 'money', label: 'שובר כספי' },
-  { key: 'percent', label: 'הנחה באחוזים' },
-  { key: 'other', label: 'אחר' },
+  { key: 'money', label: 'שובר כספי', short: 'כספי' },
+  { key: 'percent', label: 'הנחה באחוזים', short: 'אחוזים' },
+  { key: 'other', label: 'אחר', short: 'אחר' },
 ];
 /** Is the coupon a code on the phone, or a paper/plastic card you have to bring along. */
 export const COUPON_FORMATS = [

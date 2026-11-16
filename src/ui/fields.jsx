@@ -6,7 +6,7 @@ import { formatDate } from '@/domain/format';
 /** Label + control + inline error. `id` ties the label to the control. */
 export function Field({ label, error, hint, children, id, className, aside }) {
   return (
-    <div className={cx('space-y-1.5', className)} data-field={id}>
+    <div className={cx('space-y-1', className)} data-field={id}>
       {(label || aside) && (
         <div className="flex items-center justify-between gap-2">
           {label && (
@@ -55,7 +55,7 @@ export const TextArea = forwardRef(function TextArea({ className, ...props }, re
  */
 export function DateInput({ id, value, onChange, min, placeholder = 'בחר תאריך' }) {
   return (
-    <div className="relative h-[50px] w-full min-w-0">
+    <div className="relative h-10 w-full min-w-0">
       <div className="field pointer-events-none absolute inset-0 overflow-hidden !p-0">
         <span className={cx('absolute inset-y-0 left-3.5 right-10 flex items-center truncate text-base', value ? 'text-ink' : 'text-mute/35')}>
           {value ? formatDate(value) : placeholder}

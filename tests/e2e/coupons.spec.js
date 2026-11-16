@@ -124,13 +124,17 @@ test('T21 expiry presets and clearing the date', async ({ page }) => {
   await setup(page);
   await page.getByTestId('fab-add').click();
   const s = sheet(page, 'קופון חדש');
-  await s.getByRole('button', { name: '+ חודש' }).click();
+  // next to the amount there's room for 3 / 6 / 12 months
+  await s.getByRole('button', { name: 'שנה', exact: true }).click();
   const d = new Date();
-  d.setMonth(d.getMonth() + 1);
+  d.setMonth(d.getMonth() + 12);
   const shown = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
   await expect(s.getByText(shown)).toBeVisible();
   await s.getByRole('button', { name: 'נקה תאריך' }).click();
-  await expect(s.getByText('ללא תאריך תפוגה')).toBeVisible();
+  await expect(s.getByText('ללא תוקף')).toBeVisible();
+  // without an amount the expiry has the whole row, so "month" shows too
+  await s.getByRole('radio', { name: 'אחר' }).click();
+  await expect(s.getByRole('button', { name: 'חודש', exact: true })).toBeVisible();
 });
 
 test('T22 store suggestions reuse stores already entered', async ({ page }) => {

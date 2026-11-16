@@ -4,8 +4,6 @@ import { createFamily, joinFamily, setCurrentFamily } from '@/data';
 import { Button, Card, Field, IconTile, Input, cx, useToast } from '@/ui';
 import { normalizeInviteCode } from '@/domain/family';
 
-const JOIN_TIMEOUT = 15000;
-
 /** Create-a-family / join-with-code. Used on the welcome screen and in settings. */
 export function FamilyActions({ user, families = [], initialCode = '', compact = false, onDone }) {
   const toast = useToast();
@@ -14,31 +12,10 @@ export function FamilyActions({ user, families = [], initialCode = '', compact =
   const [code, setCode] = useState(initialCode);
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
-  const [pendingId, setPendingId] = useState(null);
-  const onDoneRef = useRef(onDone);
-  onDoneRef.current = onDone;
-
-  // A join is done once the family shows up in my list (the server accepted it).
-  useEffect(() => {
-    if (!pendingId) return undefined;
-    const joined = families.find((f) => f.id === pendingId);
-    if (joined) {
-      toast(`הצטרפת ל"${joined.name}" 🎉`);
-      setPendingId(null);
-      setBusy(false);
-      setMode(null);
-      setCode('');
-      onDoneRef.current?.();
-      setCurrentFamily(user.uid, joined.id);
-      return undefined;
-    }
-    const t = setTimeout(() => {
-      setPendingId(null);
-      setBusy(false);
-      setErr('ההצטרפות לא הושלמה. בדוק את החיבור ונסה שוב');
-    }, JOIN_TIMEOUT);
-    return () => clearTimeout(t);
-  }, [pendingId, families, toast, user.uid]);
+  const alive = useRef(true);
+  useEffect(() => () => {
+    alive.current = false;
+  }, []);
 
   async function submit() {
     setErr('');
@@ -62,10 +39,17 @@ export function FamilyActions({ user, families = [], initialCode = '', compact =
     }
     setBusy(true);
     try {
-      setPendingId(await joinFamily(user, clean));
+      const joined = await joinFamily(user, clean);
+      toast(`הצטרפת ל"${joined.name}" 🎉`);
+      setCurrentFamily(user.uid, joined.id);
+      onDone?.();
+      if (!alive.current) return;
+      setMode(null);
+      setCode('');
     } catch (e) {
-      setErr(e.message);
-      setBusy(false);
+      if (alive.current) setErr(e.message);
+    } finally {
+      if (alive.current) setBusy(false);
     }
   }
 
@@ -118,7 +102,7 @@ export function FamilyActions({ user, families = [], initialCode = '', compact =
         <Button variant="primary" className="flex-1" onClick={submit} disabled={busy}>
           {busy ? 'מצטרף…' : mode === 'create' ? 'צור משפחה' : 'הצטרף'}
         </Button>
-        <Button variant="soft" onClick={() => { setMode(null); setErr(''); setBusy(false); setPendingId(null); }}>
+        <Button variant="soft" onClick={() => { setMode(null); setErr(''); }}>
           ביטול
         </Button>
       </div>

@@ -72,10 +72,10 @@ export function Sheet({ title, onClose, children, footer, actions, label }) {
         style={{ maxHeight: vp.keyboard ? '100%' : 'calc(100% - 16px)', willChange: 'transform' }}
       >
         <div ref={handle} className="shrink-0 cursor-grab touch-none select-none">
-          <div className="flex justify-center pb-1 pt-2.5">
+          <div className="flex justify-center pb-1 pt-2">
             <span className="h-1.5 w-10 rounded-full bg-navy/15" />
           </div>
-          <div className="flex items-center gap-2 border-b border-navy/[0.06] px-5 pb-3 pt-1">
+          <div className="flex items-center gap-2 border-b border-navy/[0.06] px-5 pb-2 pt-0.5">
             <h2 className="min-w-0 flex-1 truncate text-base font-semibold text-ink">{title}</h2>
             {actions}
             <button type="button" onClick={onClose} className="glass-card rounded-full p-2 text-navy/60 transition-colors" aria-label="סגור">
@@ -83,11 +83,11 @@ export function Sheet({ title, onClose, children, footer, actions, label }) {
             </button>
           </div>
         </div>
-        <div ref={body} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4" style={{ WebkitOverflowScrolling: 'touch' }}>
+        <div ref={body} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-2 pt-2.5" style={{ WebkitOverflowScrolling: 'touch' }}>
           {children}
         </div>
         {footer && (
-          <div className="shrink-0 border-t border-navy/[0.06] px-5 pt-3" style={{ paddingBottom: vp.keyboard ? '10px' : 'max(14px, env(safe-area-inset-bottom))' }}>
+          <div className="shrink-0 border-t border-navy/[0.06] px-5 pt-2.5" style={{ paddingBottom: vp.keyboard ? '8px' : 'max(10px, env(safe-area-inset-bottom))' }}>
             {footer}
           </div>
         )}

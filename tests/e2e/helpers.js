@@ -75,7 +75,7 @@ export async function addCoupon(page, c) {
   await s.getByLabel('שם הקופון').fill(c.title);
   await s.getByLabel('איפה אפשר לממש').fill(c.store);
   if (c.category) await s.getByRole('button', { name: c.category, exact: true }).click();
-  if (c.type === 'percent') await s.getByRole('radio', { name: 'הנחה באחוזים' }).click();
+  if (c.type === 'percent') await s.getByRole('radio', { name: 'אחוזים' }).click();
   if (c.type === 'other') await s.getByRole('radio', { name: 'אחר' }).click();
   if (c.value != null) await s.locator('#value').fill(String(c.value));
   if (c.expiry) await s.locator('#expiry').fill(c.expiry);
