@@ -1,7 +1,7 @@
 import { forwardRef } from 'react';
 import { Calendar, X } from 'lucide-react';
-import { cx } from './primitives';
-import { formatDate } from '../lib';
+import { cx } from './cx';
+import { formatDate } from '@/domain/format';
 
 /** Label + control + inline error. `id` ties the label to the control. */
 export function Field({ label, error, hint, children, id, className, aside }) {

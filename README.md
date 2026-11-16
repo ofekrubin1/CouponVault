@@ -12,6 +12,18 @@ npm run deploy:rules  # Firestore rules
 npm run deploy        # build + Firebase Hosting
 ```
 
+## Code layout (`src/`)
+
+```
+domain/     pure rules: expiry, redemption math, form validation, filters (no React/Firebase, unit-tested)
+data/       Firestore access per entity (users, families, coupons) + background writes / live listeners
+services/   Firebase setup, sign-in
+ui/         design system (Card, Button, Sheet, Toast, ConfirmDialog, fields) – knows nothing about coupons
+hooks/      generic hooks (scroll lock, back button, keyboard-aware viewport)
+features/   one folder per area: auth, families, coupons (ticket/detail/form), home, archive, settings
+app/        shell: providers, auth gate, header, tabs, bottom bar, sheets
+```
+
 ## Tests
 
 All against the local Firebase emulators (Java required), never production data.

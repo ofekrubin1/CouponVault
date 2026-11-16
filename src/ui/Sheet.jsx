@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
-import { useScrollLock, useVisualViewport } from '../hooks/overlay';
+import { useScrollLock } from '@/hooks/useScrollLock';
+import { useVisualViewport } from '@/hooks/useVisualViewport';
 
 /**
  * Bottom sheet over the current screen.
@@ -9,7 +10,7 @@ import { useScrollLock, useVisualViewport } from '../hooks/overlay';
  * - Locks the page behind it (iOS-safe) and keeps scroll inside the sheet (overscroll-contain).
  * - Drag the handle/header down to dismiss. The back button is handled by the caller (useBackClose).
  */
-export default function Sheet({ title, onClose, children, footer, actions, label }) {
+export function Sheet({ title, onClose, children, footer, actions, label }) {
   useScrollLock();
   const vp = useVisualViewport();
   const [drag, setDrag] = useState(0);

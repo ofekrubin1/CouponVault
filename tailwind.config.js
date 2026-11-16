@@ -17,6 +17,10 @@ export default {
         soft: '#F8F8F9',
         danger: '#C0392B',
         ok: '#2E8B57',
+        // soft blue used for filled actions and selected states (calmer than navy)
+        accent: { DEFAULT: '#5C74AA', soft: '#E2E9F7', ink: '#2C4373', from: '#7F96C9', via: '#6580B8', to: '#4F689F' },
+        // light gold for accents on top of the blue coupon card
+        champagne: { DEFAULT: '#F3E2B3', light: '#F6E7BD' },
       },
       boxShadow: {
         card: '0 2px 12px rgba(10,31,68,0.06), 0 1px 3px rgba(10,31,68,0.04), inset 0 1px 0 rgba(255,255,255,0.8)',

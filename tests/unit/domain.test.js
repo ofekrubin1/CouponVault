@@ -1,0 +1,116 @@
+// Logic that used to live inside components: redemption math, form validation, filters, families.
+import { describe, it, expect } from 'vitest';
+import { planRedemption, rebalance, summarize, isExpiringSoon, balanceOf } from '@/domain/coupon';
+import { validateCouponForm, couponFromForm, formFromCoupon, firstInvalidField, NEW_CATEGORY } from '@/domain/couponForm';
+import { EMPTY_FILTERS, filterCoupons, categoryCounts, typeCounts, toggleIn, activeFilterCount, voucherBalance } from '@/domain/filters';
+import { normalizeInviteCode, familyCategories, membersOf, pickCurrentFamily, inviteMessage } from '@/domain/family';
+import { NO_CATEGORY } from '@/domain/constants';
+
+const NOW = new Date(2026, 10, 15, 12, 0);
+const voucher = (fields = {}) => ({ id: 'v', status: 'active', type: 'money', value: 200, balance: 200, usages: [], ...fields });
+
+describe('planRedemption', () => {
+  it('partial use leaves the rest', () => expect(planRedemption(voucher(), 80)).toEqual({ spend: 80, left: 120, finished: false }));
+  it('using exactly the balance finishes it', () => expect(planRedemption(voucher({ balance: 50 }), 50)).toMatchObject({ left: 0, finished: true }));
+  it('"use all" spends the whole balance', () => expect(planRedemption(voucher({ balance: 75 }))).toEqual({ spend: 75, left: 0, finished: true }));
+  it('refuses more than the balance', () => expect(planRedemption(voucher(), 250).error).toBe('הסכום גדול מהיתרה (₪200)'));
+  it('refuses zero / empty', () => {
+    expect(planRedemption(voucher(), 0).error).toBe('יש להזין סכום');
+    expect(planRedemption(voucher(), '').error).toBe('יש להזין סכום');
+  });
+  it('avoids float noise', () => expect(planRedemption(voucher({ balance: 0.3 }), 0.1).left).toBe(0.2));
+  it('non-money coupons are simply used', () => expect(planRedemption({ type: 'percent', value: 20 })).toEqual({ spend: null, left: 0, finished: true }));
+});
+
+describe('balances', () => {
+  it('rebalance after editing the face value keeps what was used', () => expect(rebalance(300, voucher({ usages: [{ amount: 50 }] }))).toBe(250));
+  it('rebalance never goes negative', () => expect(rebalance(30, voucher({ usages: [{ amount: 50 }] }))).toBe(0));
+  it('balanceOf falls back to the face value', () => expect(balanceOf(voucher({ balance: undefined }))).toBe(200));
+  it('summary counts and sums', () => {
+    const active = [voucher({ balance: 120, expiry: '2026-11-20' }), voucher({ id: 'b', balance: 80 }), { id: 'p', status: 'active', type: 'percent', value: 10 }];
+    expect(summarize(active, 14, NOW)).toEqual({ activeCount: 3, expiringCount: 1, moneyCount: 2, balance: 200 });
+  });
+  it('expiring soon = within the window, not expired', () => {
+    expect(isExpiringSoon({ expiry: '2026-11-29' }, 14, NOW)).toBe(true);
+    expect(isExpiringSoon({ expiry: '2026-12-30' }, 14, NOW)).toBe(false);
+    expect(isExpiringSoon({ expiry: '2026-11-01' }, 14, NOW)).toBe(false);
+    expect(isExpiringSoon({}, 14, NOW)).toBe(false);
+  });
+});
+
+describe('coupon form', () => {
+  const valid = { ...formFromCoupon(null), title: 'שובר', store: 'זארה', value: '200' };
+  it('a complete form is valid', () => expect(validateCouponForm(valid)).toEqual({}));
+  it('name and store are required', () => {
+    const e = validateCouponForm({ ...valid, title: ' ', store: '' });
+    expect(e).toMatchObject({ title: 'חסר שם לקופון', store: 'חסר איפה אפשר לממש' });
+    expect(firstInvalidField(e)).toBe('title');
+  });
+  it('a voucher needs an amount; "other" does not', () => {
+    expect(validateCouponForm({ ...valid, value: '' }).value).toBe('בשובר כספי צריך להזין סכום');
+    expect(validateCouponForm({ ...valid, type: 'other', value: '' })).toEqual({});
+  });
+  it('percent must be 1–100 when given', () => {
+    expect(validateCouponForm({ ...valid, type: 'percent', value: '120' }).value).toBe('אחוז בין 1 ל-100');
+    expect(validateCouponForm({ ...valid, type: 'percent', value: '' })).toEqual({});
+  });
+  it('a new category needs a name', () => expect(validateCouponForm({ ...valid, category: NEW_CATEGORY }).category).toBe('חסר שם לקטגוריה החדשה'));
+  it('converts to stored fields (trimmed, typed, new category resolved)', () => {
+    const data = couponFromForm({ ...valid, title: ' שובר ', category: NEW_CATEGORY, newCategory: ' דלק ', expiry: '' });
+    expect(data).toEqual({ title: 'שובר', store: 'זארה', category: 'דלק', type: 'money', value: 200, expiry: null, code: '', source: '', notes: '' });
+  });
+  it('editing recalculates the balance from the new value', () => {
+    const existing = voucher({ usages: [{ amount: 50 }], balance: 150 });
+    expect(couponFromForm({ ...formFromCoupon(existing), title: 'x', store: 'y', value: '300' }, existing).balance).toBe(250);
+  });
+  it('"other" stores no value', () => expect(couponFromForm({ ...valid, type: 'other' }).value).toBeNull());
+});
+
+describe('filters', () => {
+  const list = [
+    { id: 1, title: 'פיצה', store: 'דומינוס', category: 'מסעדות', type: 'money', value: 100, balance: 100, status: 'active' },
+    { id: 2, title: 'סושי', store: 'ג׳פניקה', category: 'מסעדות', type: 'money', value: 150, balance: 90, status: 'active', expiry: '2026-11-18' },
+    { id: 3, title: 'חולצה', store: 'קסטרו', category: 'אופנה', type: 'percent', value: 20, status: 'active', code: 'CAS20' },
+    { id: 4, title: 'קפה', store: 'ארומה', type: 'other', status: 'active' },
+  ];
+  const run = (opts) => filterCoupons(list, { alertDays: 14, now: NOW, ...opts }).map((c) => c.id);
+  it('no filters = everything', () => expect(run({})).toEqual([1, 2, 3, 4]));
+  it('several categories at once', () => expect(run({ filters: { ...EMPTY_FILTERS, cats: new Set(['מסעדות', 'אופנה']) } })).toEqual([1, 2, 3]));
+  it('"no category" is a filter of its own', () => expect(run({ filters: { ...EMPTY_FILTERS, cats: new Set([NO_CATEGORY]) } })).toEqual([4]));
+  it('by type + expiring soon', () => expect(run({ filters: { ...EMPTY_FILTERS, types: new Set(['money']), soon: true } })).toEqual([2]));
+  it('search looks at title, store and code (case-insensitive)', () => {
+    expect(run({ query: 'דומי' })).toEqual([1]);
+    expect(run({ query: 'cas20' })).toEqual([3]);
+  });
+  it('counts per category (most first) and per type', () => {
+    expect(categoryCounts(list)).toEqual([['מסעדות', 2], ['אופנה', 1], [NO_CATEGORY, 1]]);
+    expect(typeCounts(list)).toEqual({ money: 2, percent: 1, other: 1 });
+  });
+  it('toggle + active count + voucher balance', () => {
+    const f = { ...EMPTY_FILTERS, cats: toggleIn(new Set(), 'אופנה'), soon: true };
+    expect(activeFilterCount(f)).toBe(2);
+    expect(toggleIn(f.cats, 'אופנה').size).toBe(0);
+    expect(voucherBalance(list)).toBe(190);
+  });
+});
+
+describe('families', () => {
+  it('invite codes are cleaned while typing', () => expect(normalizeInviteCode('ab-c1 23x')).toBe('ABC123'));
+  it('categories = defaults + custom, no duplicates', () => {
+    const cats = familyCategories({ customCategories: ['דלק', 'מסעדות'] });
+    expect(cats.filter((c) => c === 'מסעדות')).toHaveLength(1);
+    expect(cats.at(-1)).toBe('דלק');
+  });
+  it('members carry their info (with a fallback name)', () =>
+    expect(membersOf({ members: ['a', 'b'], memberInfo: { a: { name: 'דנה' } } })).toEqual([{ uid: 'a', name: 'דנה' }, { uid: 'b', name: 'משתמש' }]));
+  it('current family falls back to the first', () => {
+    const fams = [{ id: 'x' }, { id: 'y' }];
+    expect(pickCurrentFamily(fams, 'y').id).toBe('y');
+    expect(pickCurrentFamily(fams, 'gone').id).toBe('x');
+  });
+  it('invite message has the code and the link', () => {
+    const m = inviteMessage({ name: 'רובין', inviteCode: 'ABC123' }, 'https://couponvault.web.app');
+    expect(m).toContain('ABC123');
+    expect(m).toContain('https://couponvault.web.app/?join=ABC123');
+  });
+});

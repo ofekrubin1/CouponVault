@@ -3,7 +3,7 @@ import { openTicket, seed, serverCoupons, setup, tab, ticket } from './helpers';
 
 const voucher = { title: 'שובר 200', store: 'Buyme', type: 'money', value: 200 };
 
-test('T23 partial use: 200 → use 80 → 120 left, with a live preview and history', async ({ page }) => {
+test('T23 partial use: 200 → use 80 → back on the home screen with 120 left; history kept', async ({ page }) => {
   const { familyId } = await setup(page);
   await seed(page, familyId, [voucher]);
   const s = await openTicket(page, 'שובר 200');
@@ -11,12 +11,15 @@ test('T23 partial use: 200 → use 80 → 120 left, with a live preview and hist
   await s.getByLabel('סכום שנוצל').fill('80');
   await expect(s.getByText('יישארו ₪120 בשובר')).toBeVisible();
   await s.getByTestId('partial-confirm').click();
+  // the sheet closes and we're back on the home screen
+  await expect(s).toBeHidden();
   await expect(page.getByRole('status')).toContainText('נותרו ₪120');
-  await expect(s.getByTestId('hero-balance')).toHaveText('₪120');
-  await expect(s.getByTestId('usage-history')).toContainText('-₪80');
-  await s.getByRole('button', { name: 'סגור' }).click();
+  await expect(page.getByRole('navigation', { name: 'ניווט' }).getByRole('button', { name: 'קופונים' })).toHaveAttribute('aria-current', 'page');
   await expect(ticket(page, 'שובר 200')).toContainText('₪120');
   await expect(ticket(page, 'שובר 200')).toContainText('מתוך ₪200');
+  const again = await openTicket(page, 'שובר 200');
+  await expect(again.getByTestId('hero-balance')).toHaveText('₪120');
+  await expect(again.getByTestId('usage-history')).toContainText('-₪80');
   await expect.poll(async () => (await serverCoupons(page, familyId))[0]).toMatchObject({ balance: 120, status: 'active' });
 });
 
@@ -70,9 +73,11 @@ test('T27 undo the last usage puts the money back', async ({ page }) => {
   await s.getByRole('button', { name: 'מימוש חלקי' }).click();
   await s.getByLabel('סכום שנוצל').fill('45.5');
   await s.getByTestId('partial-confirm').click();
-  await expect(s.getByTestId('hero-balance')).toHaveText('₪154.5');
-  await s.getByRole('button', { name: 'בטל אחרון' }).click();
-  await expect(s.getByTestId('hero-balance')).toHaveText('₪200');
-  await expect(s.getByTestId('usage-history')).toHaveCount(0);
+  await expect(s).toBeHidden();
+  await expect(ticket(page, 'שובר 200')).toContainText('₪154.5');
+  const again = await openTicket(page, 'שובר 200');
+  await again.getByRole('button', { name: 'בטל אחרון' }).click();
+  await expect(again.getByTestId('hero-balance')).toHaveText('₪200');
+  await expect(again.getByTestId('usage-history')).toHaveCount(0);
   await expect.poll(async () => (await serverCoupons(page, familyId))[0]).toMatchObject({ balance: 200, usages: [] });
 });
