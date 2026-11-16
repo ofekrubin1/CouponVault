@@ -1,5 +1,5 @@
 // The coupon form's model: initial values, validation and conversion to a stored coupon. Pure functions.
-import { couponCategories, rebalance } from './coupon';
+import { couponCategories, isPhysical, rebalance } from './coupon';
 
 /** Field order, so the form can jump to the first invalid one. */
 export const FIELD_ORDER = ['title', 'store', 'category', 'value'];
@@ -11,6 +11,7 @@ export const formFromCoupon = (coupon) => ({
   addingCategory: false,
   newCategory: '',
   type: coupon?.type || 'money',
+  format: coupon && isPhysical(coupon) ? 'physical' : 'digital',
   value: coupon?.value ?? '',
   expiry: coupon?.expiry || '',
   code: coupon?.code || '',
@@ -51,6 +52,7 @@ export function couponFromForm(f, existing = null) {
     categories,
     category: categories[0] || '',
     type: f.type,
+    format: f.format === 'physical' ? 'physical' : 'digital',
     value,
     expiry: f.expiry || null,
     code: f.code.trim(),

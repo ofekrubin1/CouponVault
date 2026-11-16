@@ -15,6 +15,8 @@ export function couponCategories(c) {
 }
 
 export const isUsed = (c) => c.status === 'used';
+/** Physical voucher (paper / card). Coupons saved before this option existed are digital. */
+export const isPhysical = (c) => c?.format === 'physical';
 export const isExpired = (c, now) => c.status === 'active' && daysLeft(c, now) !== null && daysLeft(c, now) < 0;
 export const isActive = (c, now) => c.status === 'active' && !isExpired(c, now);
 export const isMoney = (c) => c.type === 'money';

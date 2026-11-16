@@ -1,7 +1,7 @@
-import { Copy, Store, Tag, Gift, Calendar, StickyNote, UserRound, ExternalLink } from 'lucide-react';
+import { Copy, Store, Tag, Gift, Calendar, StickyNote, UserRound, ExternalLink, CreditCard, Smartphone } from 'lucide-react';
 import { LinkifiedText, useToast } from '@/ui';
 import { formatDate } from '@/domain/format';
-import { couponCategories } from '@/domain/coupon';
+import { couponCategories, isPhysical } from '@/domain/coupon';
 import { displayStore, isUrl, toHref } from '@/domain/links';
 
 /** The store; when it's a web address, a tappable link showing the site name. */
@@ -65,6 +65,9 @@ export function CouponInfo({ coupon }) {
           {couponCategories(coupon).join(' · ')}
         </Row>
       )}
+      <Row icon={isPhysical(coupon) ? CreditCard : Smartphone} label="השובר הוא">
+        <span data-testid="coupon-format">{isPhysical(coupon) ? 'פיזי (צריך להביא איתך)' : 'דיגיטלי'}</span>
+      </Row>
       <Row icon={Calendar} label="תוקף">{coupon.expiry ? formatDate(coupon.expiry) : 'ללא תאריך תפוגה'}</Row>
       {coupon.source && (
         <Row icon={Gift} label="התקבל מ-">

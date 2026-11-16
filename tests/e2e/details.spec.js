@@ -107,3 +107,27 @@ test('T51 a field focused low in the form is scrolled into view', async ({ page 
   });
   await expect(code).toBeInViewport({ timeout: 3000 });
 });
+
+test('T52 a coupon can be marked physical (digital by default) and changed back', async ({ page }) => {
+  const { familyId } = await setup(page);
+  await page.getByTestId('fab-add').click();
+  const s = sheet(page, 'קופון חדש');
+  await expect(s.getByRole('radio', { name: 'דיגיטלי' })).toHaveAttribute('aria-checked', 'true');
+  await s.getByLabel('שם הקופון').fill('תו מודפס');
+  await s.getByLabel('איפה אפשר לממש').fill('שופרסל');
+  await s.getByRole('radio', { name: 'פיזי' }).click();
+  await s.getByRole('radio', { name: 'אחר' }).click();
+  await s.getByTestId('coupon-save').click();
+  await expect(ticket(page, 'תו מודפס').getByTestId('physical-badge')).toHaveText('פיזי');
+  await expect.poll(async () => (await serverCoupons(page, familyId))[0]?.format).toBe('physical');
+
+  const d = await openTicket(page, 'תו מודפס');
+  await expect(d.getByTestId('coupon-format')).toContainText('פיזי');
+  await d.getByRole('button', { name: 'עריכה' }).click();
+  const f = sheet(page, 'עריכת קופון');
+  await expect(f.getByRole('radio', { name: 'פיזי' })).toHaveAttribute('aria-checked', 'true');
+  await f.getByRole('radio', { name: 'דיגיטלי' }).click();
+  await f.getByTestId('coupon-save').click();
+  await expect(ticket(page, 'תו מודפס').getByTestId('physical-badge')).toHaveCount(0);
+  await expect.poll(async () => (await serverCoupons(page, familyId))[0]?.format).toBe('digital');
+});

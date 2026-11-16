@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { ChevronDown, Plus, X, Hash, Type, Gift, Check } from 'lucide-react';
 import { Button, DateInput, Field, Input, Segmented, Sheet, TextArea, cx } from '@/ui';
-import { COUPON_TYPES, EXPIRY_PRESETS } from '@/domain/constants';
+import { COUPON_FORMATS, COUPON_TYPES, EXPIRY_PRESETS } from '@/domain/constants';
 import { couponFromForm, firstInvalidField, formFromCoupon, validateCouponForm } from '@/domain/couponForm';
 import { usedAmount } from '@/domain/coupon';
 import { presetDate } from '@/domain/format';
@@ -75,6 +75,10 @@ export function CouponFormSheet({ coupon, family, user, categories, stores, onCl
 
         <Field label="סוג הקופון">
           <Segmented name="סוג הקופון" value={f.type} onChange={set('type')} options={COUPON_TYPES} />
+        </Field>
+
+        <Field label="השובר הוא" hint={f.format === 'physical' ? 'שובר מודפס / כרטיס שצריך להביא איתך' : undefined}>
+          <Segmented name="דיגיטלי או פיזי" value={f.format} onChange={set('format')} options={COUPON_FORMATS} />
         </Field>
 
         {f.type !== 'other' && (

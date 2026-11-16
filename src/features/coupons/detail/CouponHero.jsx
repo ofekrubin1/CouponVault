@@ -1,6 +1,6 @@
-import { Store, Gift, Clock, CheckCheck } from 'lucide-react';
+import { Store, Gift, Clock, CheckCheck, CreditCard } from 'lucide-react';
 import { cx } from '@/ui';
-import { balanceOf, couponCategories, expiryLabel, isExpired, isMoney, isUsed, urgency } from '@/domain/coupon';
+import { balanceOf, couponCategories, expiryLabel, isExpired, isMoney, isPhysical, isUsed, urgency } from '@/domain/coupon';
 import { displayStore } from '@/domain/links';
 import { formatDate, money } from '@/domain/format';
 import { BrandLogo } from '../BrandLogo';
@@ -73,13 +73,22 @@ export function CouponHero({ coupon, alertDays }) {
               <Store className="h-3.5 w-3.5 shrink-0 text-champagne" strokeWidth={1.75} />
               <span className="truncate">{displayStore(coupon.store)}</span>
             </p>
-            {cats.length > 0 && (
-              <div className="mt-1 flex flex-wrap gap-1" data-testid="hero-categories">
-                {cats.map((c) => (
-                  <span key={c} className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-medium text-white/85">
-                    {c}
+            {(cats.length > 0 || isPhysical(coupon)) && (
+              <div className="mt-1 flex flex-wrap gap-1">
+                {cats.length > 0 && (
+                  <span className="contents" data-testid="hero-categories">
+                    {cats.map((c) => (
+                      <span key={c} className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-medium text-white/85">
+                        {c}
+                      </span>
+                    ))}
                   </span>
-                ))}
+                )}
+                {isPhysical(coupon) && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-champagne/25 px-2 py-0.5 text-[10px] font-semibold text-white">
+                    <CreditCard className="h-3 w-3" strokeWidth={2} /> שובר פיזי
+                  </span>
+                )}
               </div>
             )}
           </div>

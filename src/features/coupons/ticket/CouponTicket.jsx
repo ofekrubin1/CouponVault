@@ -1,6 +1,6 @@
-import { Store, CheckCheck, Trash2 } from 'lucide-react';
+import { Store, CheckCheck, Trash2, CreditCard } from 'lucide-react';
 import { cx } from '@/ui';
-import { couponCategories, isExpired, isUsed } from '@/domain/coupon';
+import { couponCategories, isExpired, isPhysical, isUsed } from '@/domain/coupon';
 import { displayStore } from '@/domain/links';
 import { BrandLogo } from '../BrandLogo';
 import { ExpiryBadge } from '../ExpiryBadge';
@@ -91,6 +91,11 @@ export function CouponTicket({ coupon, alertDays, onClick, onDelete }) {
                 </span>
               ) : (
                 <ExpiryBadge coupon={coupon} alertDays={alertDays} />
+              )}
+              {isPhysical(coupon) && (
+                <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-gold/10 px-2 py-0.5 text-[11px] font-medium text-gold-deep" data-testid="physical-badge">
+                  <CreditCard className="h-3 w-3" strokeWidth={2} /> פיזי
+                </span>
               )}
               {couponCategories(coupon).length > 0 && <span className="min-w-0 truncate text-[11px] font-light text-mute/45">{couponCategories(coupon).join(' · ')}</span>}
             </div>

@@ -60,7 +60,7 @@ describe('coupon form', () => {
   it('a new category needs a name', () => expect(validateCouponForm({ ...valid, addingCategory: true }).category).toBe('חסר שם לקטגוריה החדשה'));
   it('converts to stored fields (trimmed, typed, several categories incl. a new one)', () => {
     const data = couponFromForm({ ...valid, title: ' שובר ', categories: ['אופנה', 'בית'], addingCategory: true, newCategory: ' דלק ', expiry: '' });
-    expect(data).toEqual({ title: 'שובר', store: 'זארה', categories: ['אופנה', 'בית', 'דלק'], category: 'אופנה', type: 'money', value: 200, expiry: null, code: '', source: '', notes: '' });
+    expect(data).toEqual({ title: 'שובר', store: 'זארה', categories: ['אופנה', 'בית', 'דלק'], category: 'אופנה', type: 'money', format: 'digital', value: 200, expiry: null, code: '', source: '', notes: '' });
   });
   it('no duplicate categories', () => expect(couponFromForm({ ...valid, categories: ['בית'], addingCategory: true, newCategory: 'בית' }).categories).toEqual(['בית']));
   it('an old coupon with a single category opens with it selected', () => expect(formFromCoupon({ title: 'x', category: 'אופנה' }).categories).toEqual(['אופנה']));
@@ -69,6 +69,13 @@ describe('coupon form', () => {
     expect(couponFromForm({ ...formFromCoupon(existing), title: 'x', store: 'y', value: '300' }, existing).balance).toBe(250);
   });
   it('"other" stores no value', () => expect(couponFromForm({ ...valid, type: 'other' }).value).toBeNull());
+  it('digital by default; physical when chosen; old coupons count as digital', () => {
+    expect(formFromCoupon(null).format).toBe('digital');
+    expect(formFromCoupon({ title: 'x' }).format).toBe('digital');
+    expect(formFromCoupon({ title: 'x', format: 'physical' }).format).toBe('physical');
+    expect(couponFromForm({ ...valid, format: 'physical' }).format).toBe('physical');
+    expect(couponFromForm(valid).format).toBe('digital');
+  });
 });
 
 describe('filters', () => {
