@@ -5,7 +5,19 @@ import { useScrollLock } from '@/hooks/useScrollLock';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
 import { useSheetDrag } from '@/hooks/useSheetDrag';
 
-/** Bring the focused field into the middle of the sheet once the keyboard has come up. */
+/**
+ * Scroll the sheet (only the sheet, never the page) so the field is visible, when it's hidden. A field already
+ * in view is left alone: moving it would shift the text under a finger that is selecting / moving the cursor.
+ */
+function reveal(body, el) {
+  const b = body.getBoundingClientRect();
+  const r = el.getBoundingClientRect();
+  const margin = 24;
+  if (r.top >= b.top + margin && r.bottom <= b.bottom - margin) return;
+  body.scrollBy({ top: r.top + r.height / 2 - (b.top + b.height / 2), behavior: 'smooth' });
+}
+
+/** Keep the focused field visible above the keyboard. */
 function useFocusedFieldVisible(bodyRef, keyboard) {
   const focused = useRef(null);
   useEffect(() => {
@@ -15,7 +27,7 @@ function useFocusedFieldVisible(bodyRef, keyboard) {
       if (!e.target.matches('input, textarea, select')) return;
       focused.current = e.target;
       // the keyboard animates in for ~300ms; scroll after it settles
-      setTimeout(() => focused.current === e.target && e.target.scrollIntoView({ block: 'center', behavior: 'smooth' }), 320);
+      setTimeout(() => focused.current === e.target && reveal(body, e.target), 320);
     };
     const onBlur = () => {
       focused.current = null;
@@ -28,8 +40,8 @@ function useFocusedFieldVisible(bodyRef, keyboard) {
     };
   }, [bodyRef]);
   useEffect(() => {
-    if (keyboard && focused.current) focused.current.scrollIntoView({ block: 'center', behavior: 'smooth' });
-  }, [keyboard]);
+    if (keyboard && focused.current && bodyRef.current) reveal(bodyRef.current, focused.current);
+  }, [keyboard, bodyRef]);
 }
 
 /**
@@ -72,7 +84,6 @@ export function Sheet({ title, onClose, children, footer, actions, label, tall =
         style={{
           maxHeight: vp.keyboard ? '100%' : 'calc(100% - 16px)',
           height: tall && !vp.keyboard ? 'calc(100% - max(16px, env(safe-area-inset-top) + 8px))' : undefined,
-          willChange: 'transform',
         }}
       >
         <div ref={handle} className="shrink-0 cursor-grab touch-none select-none">
@@ -87,7 +98,7 @@ export function Sheet({ title, onClose, children, footer, actions, label, tall =
             </button>
           </div>
         </div>
-        <div ref={body} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-3 pt-4" style={{ WebkitOverflowScrolling: 'touch' }}>
+        <div ref={body} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-3 pt-4">
           {children}
         </div>
         {footer && (

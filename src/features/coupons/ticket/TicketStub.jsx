@@ -1,4 +1,4 @@
-import { Gift, CheckCheck } from 'lucide-react';
+import { Gift, CheckCheck, ShoppingBag } from 'lucide-react';
 import { cx } from '@/ui';
 import { money } from '@/domain/format';
 import { isMoney, isUsed } from '@/domain/coupon';
@@ -42,10 +42,12 @@ export function TicketStub({ coupon, dim }) {
       </div>
     );
   }
+  const product = coupon.type === 'product';
+  const Icon = product ? ShoppingBag : Gift;
   return (
     <div className="flex flex-col items-center gap-1">
-      <Gift className={cx('h-6 w-6', dim ? 'text-mute/40' : 'text-gold-dark')} strokeWidth={1.5} />
-      <span className="text-[10px] font-light text-mute/50">קופון</span>
+      <Icon className={cx('h-6 w-6', dim ? 'text-mute/40' : 'text-gold-dark')} strokeWidth={1.5} />
+      <span className="text-[10px] font-light text-mute/50">{product ? 'מוצר' : 'קופון'}</span>
     </div>
   );
 }

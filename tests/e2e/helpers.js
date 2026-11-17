@@ -77,6 +77,7 @@ export async function addCoupon(page, c) {
   if (c.category) await s.getByRole('button', { name: c.category, exact: true }).click();
   if (c.type === 'percent') await s.getByRole('radio', { name: 'אחוזים' }).click();
   if (c.type === 'other') await s.getByRole('radio', { name: 'אחר' }).click();
+  if (c.type === 'product') await s.getByRole('radio', { name: 'מוצר' }).click();
   if (c.value != null) await s.locator('#value').fill(String(c.value));
   if (c.expiry) await s.locator('#expiry').fill(c.expiry);
   await s.getByLabel('קוד / מספר שובר').fill(c.code || 'TEST-0001');

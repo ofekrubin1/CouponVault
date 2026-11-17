@@ -1,4 +1,4 @@
-import { Store, Gift, Clock, CheckCheck, CreditCard } from 'lucide-react';
+import { Store, Gift, Clock, CheckCheck, CreditCard, ShoppingBag } from 'lucide-react';
 import { cx } from '@/ui';
 import { balanceOf, couponCategories, expiryLabel, isExpired, isMoney, isPhysical, isUsed, urgency } from '@/domain/coupon';
 import { displayStore } from '@/domain/links';
@@ -46,9 +46,10 @@ function Value({ coupon }) {
       </>
     );
   }
+  const Icon = coupon.type === 'product' ? ShoppingBag : Gift;
   return (
     <div className="flex items-center gap-3">
-      <Gift className="h-9 w-9 text-champagne" strokeWidth={1.25} />
+      <Icon className="h-9 w-9 text-champagne" strokeWidth={1.25} />
       <p className="text-lg font-medium">{coupon.title}</p>
     </div>
   );

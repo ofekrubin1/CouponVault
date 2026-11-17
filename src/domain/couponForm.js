@@ -1,5 +1,6 @@
 // The coupon form's model: initial values, validation and conversion to a stored coupon. Pure functions.
 import { couponCategories, isPhysical, rebalance } from './coupon';
+import { hasValue } from './constants';
 
 /** Field order, so the form can jump to the first invalid one. */
 export const FIELD_ORDER = ['title', 'store', 'category', 'value', 'code'];
@@ -26,7 +27,7 @@ export function validateCouponForm(f) {
   if (!f.store.trim()) e.store = 'חסר איפה אפשר לממש';
   if (f.addingCategory && !f.newCategory.trim()) e.category = 'חסר שם לקטגוריה החדשה';
   const v = f.value === '' ? null : Number(f.value);
-  if (f.type === 'money' && !(v > 0)) e.value = 'בשובר כספי צריך להזין סכום';
+  if (f.type === 'money' && !(v > 0)) e.value = 'בשובר כספי צריך סכום. שובר למוצר? בחרו "מוצר"';
   if (f.type === 'percent' && v != null && !(v > 0 && v <= 100)) e.value = 'אחוז בין 1 ל-100';
   if (!f.code.trim()) e.code = 'חסר קוד / מספר שובר';
   return e;
@@ -45,7 +46,7 @@ export function formCategories(f) {
  * When editing a voucher that was partly used, the balance is recalculated from the new face value.
  */
 export function couponFromForm(f, existing = null) {
-  const value = f.type === 'other' || f.value === '' ? null : Number(f.value);
+  const value = !hasValue(f.type) || f.value === '' ? null : Number(f.value);
   const categories = formCategories(f);
   const data = {
     title: f.title.trim(),

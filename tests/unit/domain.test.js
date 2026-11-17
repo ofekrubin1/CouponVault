@@ -55,12 +55,18 @@ describe('coupon form', () => {
     expect(firstInvalidField(e)).toBe('title');
   });
   it('a voucher needs an amount; "other" does not', () => {
-    expect(validateCouponForm({ ...valid, value: '' }).value).toBe('בשובר כספי צריך להזין סכום');
+    expect(validateCouponForm({ ...valid, value: '' }).value).toContain('בשובר כספי צריך סכום');
     expect(validateCouponForm({ ...valid, type: 'other', value: '' })).toEqual({});
+    expect(validateCouponForm({ ...valid, type: 'product', value: '' })).toEqual({});
   });
   it('percent must be 1–100 when given', () => {
     expect(validateCouponForm({ ...valid, type: 'percent', value: '120' }).value).toBe('אחוז בין 1 ל-100');
     expect(validateCouponForm({ ...valid, type: 'percent', value: '' })).toEqual({});
+  });
+  it('a product voucher (e.g. a McRoyal meal) needs no amount and stores none', () => {
+    const data = couponFromForm({ ...valid, type: 'product', title: 'ארוחת מקרויאל', value: '150' });
+    expect(data.type).toBe('product');
+    expect(data.value).toBeNull();
   });
   it('a new category needs a name', () => expect(validateCouponForm({ ...valid, addingCategory: true }).category).toBe('חסר שם לקטגוריה החדשה'));
   it('converts to stored fields (trimmed, typed, several categories incl. a new one)', () => {
@@ -153,12 +159,21 @@ describe('brand logos', () => {
   it('the added Israeli chains', () => {
     const cases = {
       'דרים קארד': 'dreamcard.co.il', KFC: 'kfc.co.il', 'תו הזהב': 'shufersal.co.il', 'כרטיס חבר': 'hvr.co.il', חבר: 'hvr.co.il',
-      'משלוחה': 'mishloha.co.il', 'גודי': 'goodi.co.il', 'גלידה גולדה': 'goldaglida.co.il', "פאפא ג'ונס": 'papajohns.co.il',
+      'משלוחה': 'mishloha.co.il', 'גלידה גולדה': 'goldaglida.co.il', "פאפא ג'ונס": 'papajohns.co.il',
       'ג׳פניקה': 'japanika.net', 'זארה הום': 'zarahome.com', 'Pull&Bear': 'pullandbear.com', 'Factory 54': 'factory54.co.il',
       'מקס סטוק': 'maxstock.co.il', 'AM:PM': 'ampm.co.il', 'פז': 'paz.co.il', 'תחנת פז': 'paz.co.il', 'Yellow': 'yellow.co.il', 'סונול': 'sonol.co.il',
       'דור אלון': 'doralon.co.il', 'ישרוטל': 'isrotel.com', 'פתאל': 'fattal.co.il', 'אייס': 'ace.co.il',
     };
     for (const [text, domain] of Object.entries(cases)) expect([text, brandDomainOf(text)]).toEqual([text, domain]);
+  });
+  it('the second batch: Foot Locker, Roladin, Neeman, Nizat, gift cards, Be, Mashbir', () => {
+    const cases = {
+      'פוט לוקר': 'footlocker.co.il', רולדין: 'roladin.co.il', 'מאפה נאמן': 'neeman.co.il', 'ניצת הדובדבן': 'nizat.com',
+      'LOVE GIFT CARD': 'castro.com/lovecard', 'Love Gift Card קסטרו': 'castro.com/lovecard', 'Power Gift Card': 'powergift.co.il',
+      'Be פארם': 'bestore.co.il', 'ניו פארם': 'bestore.co.il', 'BE': 'bestore.co.il', 'המשביר לצרכן': '365mashbir.co.il',
+    };
+    for (const [text, domain] of Object.entries(cases)) expect([text, brandDomainOf(text)]).toEqual([text, domain]);
+    expect(brandDomainOf('מועדון נאמנות')).toBeNull();
   });
   it('short names only match as a whole word', () => {
     expect(brandDomainOf('פנאי ובילוי')).toBeNull(); // contains "ילו"
@@ -215,11 +230,20 @@ describe('brands board', () => {
   it('every board name is recognised on a coupon as that brand', () => {
     for (const b of BRAND_LIST) expect(brandDomainOf(b.name), b.name).toBe(b.domain);
   });
+  it('long wordmarks lead on the board, the square site icon leads on a coupon tile', () => {
+    expect(logoSources('dreamcard.co.il', 'wide')[0]).toBe('/brands/dreamcard.png');
+    expect(logoSources('dreamcard.co.il')[0]).toContain('s2/favicons');
+    expect(logoSources('dreamcard.co.il')[1]).toBe('/brands/dreamcard.png');
+    expect(logoSources('crocs.co.il')[0]).toBe('/brands/crocs.svg');
+  });
+  it('dropped brands are no longer recognised', () => {
+    for (const n of ['אמזון', 'נקסט', 'גודי']) expect(brandDomainOf(n), n).toBe(null);
+  });
   it('Yeinot Bitan shows Carrefour (the chain was renamed)', () => expect(brandDomainOf('יינות ביתן')).toBe('carrefour.co.il'));
   it('stored logos exist in public/brands', async () => {
     const { existsSync } = await import('node:fs');
     for (const b of BRAND_LIST) {
-      const own = logoSources(b.domain).find(isOwnLogo);
+      const own = logoSources(b.domain, 'wide').find(isOwnLogo);
       if (own) expect(existsSync(`public${own}`), own).toBe(true);
     }
   });

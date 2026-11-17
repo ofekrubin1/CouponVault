@@ -62,11 +62,11 @@ test('T15 money voucher without an amount: error next to the amount, scrolled in
   await s.getByLabel('שם הקופון').fill('שובר');
   await s.getByLabel('איפה אפשר לממש').fill('חנות');
   await s.getByTestId('coupon-save').click();
-  const err = s.getByText('בשובר כספי צריך להזין סכום');
+  const err = s.getByText('בשובר כספי צריך סכום', { exact: false });
   await expect(err).toBeVisible();
   await expect(err).toBeInViewport();
-  // switching to "other" removes the need for an amount
-  await s.getByRole('radio', { name: 'אחר' }).click();
+  // switching to "product" removes the need for an amount
+  await s.getByRole('radio', { name: 'מוצר' }).click();
   await s.getByLabel('קוד / מספר שובר').fill('C-100');
   await s.getByTestId('coupon-save').click();
   await expect(s).toBeHidden();
@@ -165,4 +165,57 @@ test('T22 store suggestions reuse stores already entered', async ({ page }) => {
   await s.getByLabel('איפה אפשר לממש').fill('שופ');
   await s.getByTestId('store-suggestions').getByRole('button', { name: 'שופרסל דיל' }).click();
   await expect(s.getByLabel('איפה אפשר לממש')).toHaveValue('שופרסל דיל');
+});
+
+test('T57 (reported bug) editing: a tap inside a field moves the cursor and text can be selected', async ({ page }) => {
+  const { familyId } = await setup(page);
+  await seed(page, familyId, [{ title: 'שובר לעריכה', store: 'זארה', type: 'money', value: 100, code: 'ABCDEFGHIJKL' }]);
+  const s = await openTicket(page, 'שובר לעריכה');
+  await s.getByRole('button', { name: 'עריכה' }).click();
+  const f = sheet(page, 'עריכת קופון');
+  await expect(f).toBeVisible();
+  // the sheet must not stay a transformed / will-change layer (breaks the iOS cursor in fields)
+  await page.waitForTimeout(400);
+  expect(await f.evaluate((el) => [getComputedStyle(el).willChange, el.style.transform])).toEqual(['auto', '']);
+
+  const code = f.locator('#code');
+  const body = f.locator('.overflow-y-auto');
+  // focusing a field that is already visible must not move the form (it would drag the text from under the finger)
+  await body.evaluate((el) => (el.scrollTop = 0));
+  const title = f.getByLabel('שם הקופון');
+  await title.tap();
+  await page.waitForTimeout(700);
+  expect(await body.evaluate((el) => el.scrollTop)).toBe(0);
+  await code.tap();
+  await page.waitForTimeout(700);
+  // tap near the start of the (left-to-right) code: the cursor goes there, not to the end.
+  // (Desktop WebKit's iPhone emulation never moves the cursor on a second tap, so this part runs on Android.)
+  if (test.info().project.name === 'android') {
+    const box = await code.boundingBox();
+    await code.tap({ position: { x: 44, y: box.height / 2 } });
+    await expect.poll(() => code.evaluate((el) => el.selectionStart)).toBeLessThan(4);
+  }
+  // selecting part of the text works and typing replaces just that part
+  await code.evaluate((el) => el.setSelectionRange(0, 4));
+  await page.keyboard.type('WXYZ');
+  await expect(code).toHaveValue('WXYZEFGHIJKL');
+});
+
+test('T58 a product voucher (e.g. a McRoyal meal) is saved without an amount', async ({ page }) => {
+  const { familyId } = await setup(page);
+  await addCoupon(page, { title: 'ארוחת מקרויאל', store: 'מקדונלדס', type: 'product' });
+  const t = ticket(page, 'ארוחת מקרויאל');
+  await expect(t).toBeVisible();
+  await expect(t).toContainText('מוצר');
+  const [c] = await serverCoupons(page, familyId);
+  expect(c.type).toBe('product');
+  expect(c.value).toBeNull();
+  // a money voucher without an amount points to the product type
+  await page.getByTestId('fab-add').click();
+  const s = sheet(page, 'קופון חדש');
+  await s.getByLabel('שם הקופון').fill('בלי סכום');
+  await s.getByLabel('איפה אפשר לממש').fill('זארה');
+  await s.locator('#code').fill('X1');
+  await page.getByTestId('coupon-save').click();
+  await expect(s.getByRole('alert').first()).toContainText('שובר למוצר? בחרו "מוצר"');
 });

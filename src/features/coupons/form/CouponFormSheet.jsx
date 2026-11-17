@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { ChevronDown, Plus, X, Hash, Type, Gift, Check } from 'lucide-react';
 import { Button, DateInput, Field, Input, Segmented, Sheet, TextArea, cx } from '@/ui';
-import { COUPON_FORMATS, COUPON_TYPES, EXPIRY_PRESETS } from '@/domain/constants';
+import { COUPON_FORMATS, COUPON_TYPES, EXPIRY_PRESETS, hasValue } from '@/domain/constants';
 import { couponFromForm, firstInvalidField, formFromCoupon, validateCouponForm } from '@/domain/couponForm';
 import { usedAmount } from '@/domain/coupon';
 import { presetDate } from '@/domain/format';
@@ -54,7 +54,7 @@ export function CouponFormSheet({ coupon, family, user, categories, stores, onCl
     >
       <div ref={body} className="space-y-4 pb-2">
         <Field id="title" label="שם הקופון" error={errors.title}>
-          <Input id="title" icon={Type} className="!py-2" value={f.title} onChange={set('title')} placeholder="למשל: שובר מתנה לזארה" error={errors.title} enterKeyHint="next" />
+          <Input id="title" icon={Type} className="!py-2" value={f.title} onChange={set('title')} placeholder={f.type === 'product' ? 'למשל: ארוחת מקרויאל' : 'למשל: שובר מתנה לזארה'} error={errors.title} enterKeyHint="next" />
         </Field>
 
         <Field id="store" label="איפה אפשר לממש" error={errors.store}>
@@ -74,7 +74,7 @@ export function CouponFormSheet({ coupon, family, user, categories, stores, onCl
           />
         </Field>
 
-        <div className="grid grid-cols-[3fr_2fr] gap-3">
+        <div className="grid grid-cols-[2fr_1fr] gap-3">
           <Field label="סוג הקופון">
             <Segmented size="sm" name="סוג הקופון" value={f.type} onChange={set('type')} options={COUPON_TYPES.map((t) => ({ key: t.key, label: t.short }))} />
           </Field>
@@ -84,8 +84,8 @@ export function CouponFormSheet({ coupon, family, user, categories, stores, onCl
         </div>
 
         {/* amount and expiry share a row; without an amount the expiry takes the whole row */}
-        <div className={cx('grid gap-3', f.type !== 'other' && 'grid-cols-2')}>
-          {f.type !== 'other' && (
+        <div className={cx('grid gap-3', hasValue(f.type) && 'grid-cols-2')}>
+          {hasValue(f.type) && (
             <Field id="value" label={f.type === 'money' ? 'סכום' : 'אחוז הנחה'} error={errors.value} hint={editing && f.type === 'money' && used > 0 ? `כבר נוצלו ₪${used}` : undefined}>
               <Input
                 id="value"
@@ -103,7 +103,7 @@ export function CouponFormSheet({ coupon, family, user, categories, stores, onCl
           <Field id="expiry" label="בתוקף עד">
             <DateInput id="expiry" value={f.expiry} onChange={set('expiry')} placeholder="ללא תוקף" />
             <div className="flex gap-1.5 pt-1">
-              {(f.type === 'other' ? EXPIRY_PRESETS : EXPIRY_PRESETS.filter((p) => p.months >= 3)).map((p) => (
+              {(hasValue(f.type) ? EXPIRY_PRESETS.filter((p) => p.months >= 3) : EXPIRY_PRESETS).map((p) => (
                 <button
                   key={p.months}
                   type="button"

@@ -30,7 +30,6 @@ const BRANDS = [
   ['bug.co.il', 'באג'],
   ['ivory.co.il', 'אייבורי', 'ivory'],
   ['shekem-electric.co.il', 'שקם אלקטריק'],
-  ['amazon.com', 'אמזון', 'amazon'],
   ['aliexpress.com', 'עלי אקספרס', 'aliexpress'],
   ['buyme.co.il', 'buyme', 'ביימי', 'בי מי'],
   ['htzone.co.il', 'htzone', 'hitech zone', 'הייטקזון', 'הייטק זון'],
@@ -51,7 +50,6 @@ const BRANDS = [
   ['hvr.co.il', 'כרטיס חבר', 'מועדון חבר', 'hever', '=חבר'],
   // delivery & meal cards
   ['mishloha.co.il', 'משלוחה', 'mishloha'],
-  ['goodi.co.il', 'גודי', 'goodi'],
   // restaurants, cafés, sweets
   ['kfc.co.il', 'kfc', 'קיי אף סי'],
   ['papajohns.co.il', 'פאפא גונס', 'papa johns'],
@@ -69,7 +67,6 @@ const BRANDS = [
   ['bershka.com', 'ברשקה', 'bershka'],
   ['stradivarius.com', 'סטרדיווריוס', 'stradivarius'],
   ['zarahome.com', 'זארה הום', 'zara home'],
-  ['next.co.il', 'נקסט', '=next'],
   ['twentyfourseven.co.il', 'טוונטי פור סבן', 'twentyfourseven', 'twenty four seven'],
   ['h-o.co.il', 'h&o', 'אייץ אנד או'],
   ['delta.co.il', 'דלתא', 'delta'],
@@ -79,7 +76,7 @@ const BRANDS = [
   ['crocs.co.il', 'קרוקס', 'crocs'],
   ['stevemadden.co.il', 'סטיב מאדן', 'steve madden'],
   // beauty & pharma
-  ['newpharm.co.il', 'ניו פארם', 'new pharm', 'newpharm'],
+  ['bestore.co.il', 'be פארם', 'בי פארם', 'be pharm', 'bepharm', '=be', 'ניו פארם', 'new pharm', 'newpharm'], // New Pharm became Be (Shufersal)
   ['laline.co.il', 'לאליין', 'laline'],
   ['sabon.co.il', 'sabon'],
   ['kikocosmetics.com', 'קיקו', 'kiko'],
@@ -104,6 +101,14 @@ const BRANDS = [
   ['delek.co.il', 'חברת דלק', '=דלק', '=delek'],
   ['sonol.co.il', 'סונול', 'sonol'],
   ['doralon.co.il', 'דור אלון', 'doralon', 'dor alon'],
+  // added on request
+  ['footlocker.co.il', 'פוט לוקר', 'foot locker', 'footlocker'],
+  ['roladin.co.il', 'רולדין', 'roladin'],
+  ['neeman.co.il', 'מאפה נאמן', 'maafe neeman', '=נאמן'],
+  ['nizat.com', 'ניצת הדובדבן', 'ניצת', 'nizat'],
+  ['castro.com/lovecard', 'love gift card', 'lovegiftcard', 'לאב גיפט', 'love card', 'לאב קארד'], // Castro group's gift card
+  ['powergift.co.il', 'פאוור גיפט', 'פאואר גיפט', 'power gift', 'powergift', 'power card'],
+  ['365mashbir.co.il', 'המשביר לצרכן', 'המשביר', 'משביר', 'mashbir'],
   // hotels & cinema
   ['isrotel.com', 'ישרוטל', 'isrotel'],
   ['fattal.co.il', 'פתאל', 'fattal'],
@@ -145,6 +150,9 @@ const LABELS = {
   'yellow.co.il': 'Yellow',
   'delek.co.il': 'דלק',
   'hvr.co.il': 'חבר',
+  'bestore.co.il': 'Be פארם',
+  'castro.com/lovecard': 'Love Gift Card',
+  'powergift.co.il': 'Power Gift',
 };
 const HEBREW = /[֐-׿]/;
 const clean = (n) => n.replace(/^=/, '');
@@ -167,9 +175,9 @@ export function searchBrands(query, list = BRAND_LIST) {
 export const brandDomain = (coupon) => brandDomainOf(coupon.store) || brandDomainOf(coupon.title);
 
 /**
- * Logos stored with the app (public/brands) for brands whose site icon isn't usable: only a tiny / generic icon
- * (Victory, Terminal X, Ace, Hazi Hinam, Hot Cinema, Tiv Taam), just the brand colour (Agadir), only part of the logo
- * (Buyme's gift without the stork), or no working site any more (Cafe Greg, Yochananof).
+ * Logos stored with the app (public/brands), taken from each brand's current site: for brands whose site icon is
+ * tiny / generic / outdated / only part of the logo, or whose site is gone. `wide` marks a long wordmark: it is
+ * shown on the brands board, while the small square tile on a coupon keeps the brand's square site icon.
  */
 const OWN_LOGOS = {
   'buyme.co.il': '/brands/buyme.svg',
@@ -183,6 +191,33 @@ const OWN_LOGOS = {
   'yochananof.co.il': '/brands/yochananof.png',
   'cafegreg.co.il': '/brands/cafegreg.png',
   'tivtaam.co.il': '/brands/tivtaam.png',
+  'cafecafe.co.il': '/brands/cafecafe.svg',
+  'crocs.co.il': '/brands/crocs.svg',
+  'kikocosmetics.com': '/brands/kiko.svg',
+  'fox.co.il': '/brands/fox.svg',
+  'benedict.co.il': '/brands/benedict.png',
+  'toysrus.co.il': { src: '/brands/toysrus.png', wide: true },
+  'dreamcard.co.il': { src: '/brands/dreamcard.png', wide: true },
+  'bershka.com': { src: '/brands/bershka.svg', wide: true },
+  'decathlon.co.il': { src: '/brands/decathlon.svg', wide: true },
+  'lastprice.co.il': { src: '/brands/lastprice.svg', wide: true },
+  'twentyfourseven.co.il': { src: '/brands/tfs.png', wide: true },
+  'stevemadden.co.il': { src: '/brands/stevemadden.png', wide: true },
+  'foxhome.co.il': { src: '/brands/foxhome.png', wide: true },
+  'japanika.net': { src: '/brands/japanika.png', wide: true },
+  'sabon.co.il': { src: '/brands/sabon.png', wide: true },
+  'bestore.co.il': '/brands/be.png',
+  'roladin.co.il': '/brands/roladin.png',
+  'castro.com/lovecard': '/brands/lovegiftcard.png',
+  'footlocker.co.il': { src: '/brands/footlocker.svg', wide: true },
+  'neeman.co.il': { src: '/brands/neeman.png', wide: true },
+  'nizat.com': { src: '/brands/nizat.png', wide: true },
+  'powergift.co.il': { src: '/brands/powergift.png', wide: true },
+  '365mashbir.co.il': { src: '/brands/mashbir.png', wide: true },
+};
+const ownLogo = (domain) => {
+  const o = OWN_LOGOS[domain];
+  return typeof o === 'string' ? { src: o, wide: false } : o || null;
 };
 
 /** True for images stored with the app (always the real logo, any size). */
@@ -191,5 +226,13 @@ export const isOwnLogo = (src) => src.startsWith('/brands/');
 /** Public logo image for a domain (Google's site-icon service; no key needed). */
 export const logoUrl = (domain) => `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
 
-/** Images to try for a brand, best first. */
-export const logoSources = (domain) => [OWN_LOGOS[domain], logoUrl(domain)].filter(Boolean);
+/**
+ * Images to try for a brand, best first. `shape` is the space it's shown in: 'square' (coupon tile) or 'wide'
+ * (brands board). A long wordmark is unreadable in a small square, so there the site icon comes first.
+ */
+export function logoSources(domain, shape = 'square') {
+  const own = ownLogo(domain);
+  const icon = logoUrl(domain);
+  if (!own) return [icon];
+  return own.wide && shape === 'square' ? [icon, own.src] : [own.src, icon];
+}

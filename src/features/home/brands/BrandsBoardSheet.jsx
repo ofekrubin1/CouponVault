@@ -8,8 +8,8 @@ import { BrandMark } from '@/features/coupons';
 function Initial({ name, size }) {
   return (
     <span
-      className="flex shrink-0 items-center justify-center rounded-[11px] bg-white text-lg font-semibold text-navy/40 ring-1 ring-navy/[0.06]"
-      style={{ width: size, height: size }}
+      className="flex w-full shrink-0 items-center justify-center rounded-[11px] bg-white text-lg font-semibold text-navy/40 ring-1 ring-navy/[0.06]"
+      style={{ height: size }}
     >
       {name[0]}
     </span>
@@ -18,8 +18,8 @@ function Initial({ name, size }) {
 
 function BrandTile({ brand }) {
   return (
-    <li className="flex flex-col items-center gap-1.5 rounded-[16px] border border-white/80 bg-white/50 px-1.5 pb-2 pt-2.5" data-testid="brand-tile">
-      <BrandMark domain={brand.domain} size={46} testId="brand-mark" fallback={<Initial name={brand.name} size={46} />} />
+    <li className="flex flex-col items-center gap-1.5 rounded-[16px] border border-white/80 bg-white/50 p-1.5 pb-2" data-testid="brand-tile">
+      <BrandMark domain={brand.domain} size={58} shape="wide" testId="brand-mark" fallback={<Initial name={brand.name} size={58} />} />
       <span className="line-clamp-2 min-h-[2.4em] text-center text-[11.5px] leading-[1.2] text-ink">{brand.name}</span>
     </li>
   );

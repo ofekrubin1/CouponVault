@@ -28,3 +28,12 @@ test('brands board', async ({ page }, info) => {
     await page.screenshot({ path: `shots/brands-board${i}-${info.project.name}.png` });
   }
 });
+
+test('form with product type', async ({ page }, info) => {
+  await setup(page);
+  await page.getByTestId('fab-add').click();
+  await page.waitForTimeout(500);
+  await page.getByRole('radio', { name: 'מוצר' }).click();
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: `shots/form-product-${info.project.name}.png` });
+});
