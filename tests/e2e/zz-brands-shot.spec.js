@@ -33,7 +33,10 @@ test('form with product type', async ({ page }, info) => {
   await setup(page);
   await page.getByTestId('fab-add').click();
   await page.waitForTimeout(500);
-  await page.getByRole('radio', { name: 'מוצר' }).click();
+  await page.getByRole('button', { name: 'סוג הקופון' }).click();
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: `shots/form-menu-${info.project.name}.png` });
+  await page.getByRole('option', { name: 'מוצר' }).click();
   await page.waitForTimeout(300);
   await page.screenshot({ path: `shots/form-product-${info.project.name}.png` });
 });

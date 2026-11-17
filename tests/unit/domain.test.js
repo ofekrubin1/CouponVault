@@ -235,7 +235,8 @@ describe('brands board', () => {
     expect(logoSources('roladin.co.il', 'wide')[0]).toBe('/brands/roladin.png');
     expect(logoSources('roladin.co.il')[0]).toContain('s2/favicons');
     expect(logoSources('roladin.co.il')[1]).toBe('/brands/roladin.png');
-    expect(logoSources('dreamcard.co.il')[0]).toBe('/brands/dreamcard.png');
+    expect(logoSources('powergift.co.il')[0]).toBe('/brands/powergift.png');
+    expect(logoSources('kravitz.co.il')[0]).toBe('/brands/kravitz.png');
   });
   it('dropped brands are no longer recognised', () => {
     for (const n of ['אמזון', 'נקסט', 'גודי', 'עלי אקספרס', 'קרוקס']) expect(brandDomainOf(n), n).toBe(null);

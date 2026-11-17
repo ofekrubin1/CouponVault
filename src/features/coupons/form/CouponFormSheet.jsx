@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { ChevronDown, Plus, X, Hash, Type, Gift, Check } from 'lucide-react';
-import { Button, DateInput, Field, Input, Segmented, Sheet, TextArea, cx } from '@/ui';
+import { Button, DateInput, Field, Input, LiquidSelect, Segmented, Sheet, TextArea, cx } from '@/ui';
 import { COUPON_FORMATS, COUPON_TYPES, EXPIRY_PRESETS, hasValue } from '@/domain/constants';
 import { couponFromForm, firstInvalidField, formFromCoupon, validateCouponForm } from '@/domain/couponForm';
 import { usedAmount } from '@/domain/coupon';
@@ -53,9 +53,15 @@ export function CouponFormSheet({ coupon, family, user, categories, stores, onCl
       }
     >
       <div ref={body} className="space-y-4 pb-2">
-        <Field id="title" label="שם הקופון" error={errors.title}>
-          <Input id="title" icon={Type} className="!py-2" value={f.title} onChange={set('title')} placeholder={f.type === 'product' ? 'למשל: ארוחת מקרויאל' : 'למשל: שובר מתנה לזארה'} error={errors.title} enterKeyHint="next" />
-        </Field>
+        {/* name and type share a row: the type is a compact drop-down on the left */}
+        <div className="grid grid-cols-[1fr_7.25rem] items-start gap-2">
+          <Field id="title" label="שם הקופון" error={errors.title}>
+            <Input id="title" icon={Type} className="!py-2" value={f.title} onChange={set('title')} placeholder={f.type === 'product' ? 'למשל: ארוחת מקרויאל' : 'למשל: שובר לזארה'} error={errors.title} enterKeyHint="next" />
+          </Field>
+          <Field id="type" label="סוג">
+            <LiquidSelect id="type" label="סוג הקופון" value={f.type} onChange={set('type')} options={COUPON_TYPES} />
+          </Field>
+        </div>
 
         <Field id="store" label="איפה אפשר לממש" error={errors.store}>
           <StoreInput value={f.store} onChange={set('store')} stores={stores} error={errors.store} />
@@ -74,13 +80,9 @@ export function CouponFormSheet({ coupon, family, user, categories, stores, onCl
           />
         </Field>
 
-        <div className="grid grid-cols-[2fr_1fr] gap-3">
-          <Field label="סוג הקופון">
-            <Segmented size="sm" name="סוג הקופון" value={f.type} onChange={set('type')} options={COUPON_TYPES.map((t) => ({ key: t.key, label: t.short }))} />
-          </Field>
-          <Field label="השובר הוא">
-            <Segmented size="sm" name="דיגיטלי או פיזי" value={f.format} onChange={set('format')} options={COUPON_FORMATS} />
-          </Field>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-xs font-medium tracking-wide text-mute">השובר הוא</span>
+          <Segmented size="sm" name="דיגיטלי או פיזי" value={f.format} onChange={set('format')} options={COUPON_FORMATS} className="w-[11.5rem]" />
         </div>
 
         {/* amount and expiry share a row; without an amount the expiry takes the whole row */}

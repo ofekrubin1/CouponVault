@@ -194,9 +194,9 @@ const OWN_LOGOS = {
   'cafecafe.co.il': '/brands/cafecafe.svg',
   'kikocosmetics.com': '/brands/kiko.svg',
   'fox.co.il': '/brands/fox.svg',
-  'benedict.co.il': '/brands/benedict.png',
+  'benedict.co.il': { src: '/brands/benedict.png', wide: true },
   'toysrus.co.il': { src: '/brands/toysrus.png', wide: true },
-  'dreamcard.co.il': '/brands/dreamcard.png', // the gift card itself
+  'dreamcard.co.il': { src: '/brands/dreamcard.png', wide: true },
   'bershka.com': { src: '/brands/bershka.svg', wide: true },
   'decathlon.co.il': { src: '/brands/decathlon.svg', wide: true },
   'lastprice.co.il': { src: '/brands/lastprice.png', wide: true },
@@ -213,6 +213,9 @@ const OWN_LOGOS = {
   'nizat.com': { src: '/brands/nizat.png', wide: true },
   'powergift.co.il': '/brands/powergift.png', // the gift card itself
   'pullandbear.com': { src: '/brands/pullandbear.png', wide: true },
+  'officedepot.co.il': { src: '/brands/officedepot.png', wide: true },
+  'stradivarius.com': { src: '/brands/stradivarius.png', wide: true },
+  'kravitz.co.il': '/brands/kravitz.png',
   'shekem-electric.co.il': { src: '/brands/shekem.png', wide: true },
   'renuar.co.il': { src: '/brands/renuar.png', wide: true },
   'shemo.co.il': { src: '/brands/shemo.png', wide: true },

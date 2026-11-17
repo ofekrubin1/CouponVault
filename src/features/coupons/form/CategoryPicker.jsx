@@ -6,7 +6,7 @@ import { CategoryIcon } from '../CategoryTile';
 export function CategoryPicker({ categories, selected, onToggle, adding, onAdding, newName, onNewName, error }) {
   return (
     <>
-      <div className="flex flex-wrap gap-1">
+      <div className="flex flex-wrap gap-x-1 gap-y-2">
         {categories.map((c) => {
           const on = selected.includes(c);
           return (

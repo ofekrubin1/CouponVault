@@ -67,6 +67,12 @@ export async function serverCoupons(page, familyId) {
 
 export const sheet = (page, name) => page.getByRole('dialog', { name });
 
+/** Pick the coupon type in the form's drop-down. */
+export async function chooseType(s, name) {
+  await s.getByRole('button', { name: 'סוג הקופון' }).click();
+  await s.getByRole('option', { name }).click();
+}
+
 /** Fill and submit the "new coupon" sheet. */
 export async function addCoupon(page, c) {
   await page.getByTestId('fab-add').click();
@@ -75,9 +81,9 @@ export async function addCoupon(page, c) {
   await s.getByLabel('שם הקופון').fill(c.title);
   await s.getByLabel('איפה אפשר לממש').fill(c.store);
   if (c.category) await s.getByRole('button', { name: c.category, exact: true }).click();
-  if (c.type === 'percent') await s.getByRole('radio', { name: 'אחוזים' }).click();
-  if (c.type === 'other') await s.getByRole('radio', { name: 'אחר' }).click();
-  if (c.type === 'product') await s.getByRole('radio', { name: 'מוצר' }).click();
+  if (c.type === 'percent') await chooseType(s, 'אחוזים');
+  if (c.type === 'other') await chooseType(s, 'אחר');
+  if (c.type === 'product') await chooseType(s, 'מוצר');
   if (c.value != null) await s.locator('#value').fill(String(c.value));
   if (c.expiry) await s.locator('#expiry').fill(c.expiry);
   await s.getByLabel('קוד / מספר שובר').fill(c.code || 'TEST-0001');

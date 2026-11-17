@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { openTicket, seed, serverCoupons, setup, sheet, ticket } from './helpers';
+import { chooseType, openTicket, seed, serverCoupons, setup, sheet, ticket } from './helpers';
 
 const HTZONE = 'http://www.htzone.co.il/voucher-zone/10';
 
@@ -12,7 +12,7 @@ test('T47 a coupon can have several categories and is found under each', async (
   await s.getByRole('button', { name: 'מסעדות', exact: true }).click();
   await s.getByRole('button', { name: 'פנאי ובילוי', exact: true }).click();
   await expect(s.getByRole('button', { name: 'מסעדות', exact: true })).toHaveAttribute('aria-pressed', 'true');
-  await s.getByRole('radio', { name: 'אחר' }).click();
+  await chooseType(s, 'אחר');
   await s.getByLabel('קוד / מספר שובר').fill('C-100');
   await s.getByTestId('coupon-save').click();
   await expect(ticket(page, 'ערב בחוץ')).toContainText('מסעדות · פנאי ובילוי');
@@ -117,7 +117,7 @@ test('T52 a coupon can be marked physical (digital by default) and changed back'
   await s.getByLabel('שם הקופון').fill('תו מודפס');
   await s.getByLabel('איפה אפשר לממש').fill('שופרסל');
   await s.getByRole('radio', { name: 'פיזי' }).click();
-  await s.getByRole('radio', { name: 'אחר' }).click();
+  await chooseType(s, 'אחר');
   await s.getByLabel('קוד / מספר שובר').fill('C-100');
   await s.getByTestId('coupon-save').click();
   await expect(ticket(page, 'תו מודפס').getByTestId('physical-badge')).toHaveText('פיזי');

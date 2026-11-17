@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { isoIn, noHorizontalOverflow, openTicket, seed, setup, sheet, tab } from './helpers';
+import { chooseType, isoIn, noHorizontalOverflow, openTicket, seed, setup, sheet, tab } from './helpers';
 
 const many = (n) =>
   Array.from({ length: n }, (_, i) => ({
@@ -91,7 +91,7 @@ test('T39 a toast never blocks taps on the + button', async ({ page }) => {
   const s = sheet(page, 'קופון חדש');
   await s.getByLabel('שם הקופון').fill('מהיר');
   await s.getByLabel('איפה אפשר לממש').fill('x');
-  await s.getByRole('radio', { name: 'אחר' }).click();
+  await chooseType(s, 'אחר');
   await s.getByLabel('קוד / מספר שובר').fill('C-100');
   await s.getByTestId('coupon-save').click();
   await expect(page.getByRole('status')).toBeVisible();

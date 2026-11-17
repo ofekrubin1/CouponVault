@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { addCoupon, isoIn, openTicket, seed, serverCoupons, setup, sheet, stubClipboard, tab, ticket } from './helpers';
+import { addCoupon, chooseType, isoIn, openTicket, seed, serverCoupons, setup, sheet, stubClipboard, tab, ticket } from './helpers';
 
 test('T12 add a money voucher with every field', async ({ page }) => {
   const { familyId } = await setup(page);
@@ -29,7 +29,7 @@ test('T13b the coupon code is required', async ({ page }) => {
   const s = sheet(page, 'קופון חדש');
   await s.getByLabel('שם הקופון').fill('בלי קוד');
   await s.getByLabel('איפה אפשר לממש').fill('זארה');
-  await s.getByRole('radio', { name: 'אחר' }).click();
+  await chooseType(s, 'אחר');
   await s.getByTestId('coupon-save').click();
   await expect(s).toBeVisible();
   await expect(s.getByText('חסר קוד / מספר שובר')).toBeVisible();
@@ -66,7 +66,7 @@ test('T15 money voucher without an amount: error next to the amount, scrolled in
   await expect(err).toBeVisible();
   await expect(err).toBeInViewport();
   // switching to "product" removes the need for an amount
-  await s.getByRole('radio', { name: 'מוצר' }).click();
+  await chooseType(s, 'מוצר');
   await s.getByLabel('קוד / מספר שובר').fill('C-100');
   await s.getByTestId('coupon-save').click();
   await expect(s).toBeHidden();
@@ -128,7 +128,7 @@ test('T20 a new category added in the form is saved for the family', async ({ pa
   await s.getByLabel('איפה אפשר לממש').fill('פז');
   await s.getByRole('button', { name: 'חדשה' }).click();
   await s.getByPlaceholder('שם הקטגוריה החדשה').fill('דלק');
-  await s.getByRole('radio', { name: 'אחר' }).click();
+  await chooseType(s, 'אחר');
   await s.getByLabel('קוד / מספר שובר').fill('C-100');
   await s.getByTestId('coupon-save').click();
   await expect(ticket(page, 'תדלוק')).toContainText('דלק');
@@ -153,7 +153,7 @@ test('T21 expiry presets and clearing the date', async ({ page }) => {
   await s.getByRole('button', { name: 'נקה תאריך' }).click();
   await expect(s.getByText('ללא תוקף')).toBeVisible();
   // without an amount the expiry has the whole row, so "month" shows too
-  await s.getByRole('radio', { name: 'אחר' }).click();
+  await chooseType(s, 'אחר');
   await expect(s.getByRole('button', { name: 'חודש', exact: true })).toBeVisible();
 });
 
@@ -218,4 +218,34 @@ test('T58 a product voucher (e.g. a McRoyal meal) is saved without an amount', a
   await s.locator('#code').fill('X1');
   await page.getByTestId('coupon-save').click();
   await expect(s.getByRole('alert').first()).toContainText('שובר למוצר? בחרו "מוצר"');
+});
+
+test('T59 the coupon type is a drop-down beside the name: pick, outside tap and Escape close only the menu', async ({ page }) => {
+  await setup(page);
+  await page.getByTestId('fab-add').click();
+  const s = sheet(page, 'קופון חדש');
+  const type = s.getByRole('button', { name: 'סוג הקופון' });
+  await expect(type).toHaveText('כספי');
+  await page.waitForTimeout(450); // sheet slide-in
+  // same row as the name, on its left
+  const [t, n] = [await type.boundingBox(), await s.getByLabel('שם הקופון').boundingBox()];
+  expect(Math.abs(t.y + t.height / 2 - (n.y + n.height / 2))).toBeLessThan(3);
+  expect(t.x).toBeLessThan(n.x);
+
+  await type.click();
+  const menu = s.getByRole('listbox', { name: 'סוג הקופון' });
+  await expect(menu.getByRole('option')).toHaveText(['שובר כספי', 'הנחה באחוזים', 'שובר למוצר', 'אחר']);
+  await menu.getByRole('option', { name: 'הנחה באחוזים' }).click();
+  await expect(menu).toBeHidden();
+  await expect(type).toHaveText('אחוזים');
+  await expect(s.getByText('אחוז הנחה')).toBeVisible();
+
+  await type.click();
+  await page.keyboard.press('Escape');
+  await expect(menu).toBeHidden();
+  await expect(s).toBeVisible();
+  await type.click();
+  await s.getByText('קטגוריות').click();
+  await expect(menu).toBeHidden();
+  await expect(type).toHaveText('אחוזים');
 });
