@@ -30,7 +30,6 @@ const BRANDS = [
   ['bug.co.il', 'באג'],
   ['ivory.co.il', 'אייבורי', 'ivory'],
   ['shekem-electric.co.il', 'שקם אלקטריק'],
-  ['aliexpress.com', 'עלי אקספרס', 'aliexpress'],
   ['buyme.co.il', 'buyme', 'ביימי', 'בי מי'],
   ['htzone.co.il', 'htzone', 'hitech zone', 'הייטקזון', 'הייטק זון'],
   ['mcdonalds.co.il', 'מקדונלדס', 'mcdonalds', "mcdonald's"],
@@ -73,7 +72,6 @@ const BRANDS = [
   ['factory54.co.il', 'פקטורי 54', 'factory 54', 'factory54'],
   ['lastprice.co.il', 'לאסט פרייס', 'last price', 'lastprice'],
   ['skechers.co.il', 'סקצרס', 'skechers'],
-  ['crocs.co.il', 'קרוקס', 'crocs'],
   ['stevemadden.co.il', 'סטיב מאדן', 'steve madden'],
   // beauty & pharma
   ['bestore.co.il', 'be פארם', 'בי פארם', 'be pharm', 'bepharm', '=be', 'ניו פארם', 'new pharm', 'newpharm'], // New Pharm became Be (Shufersal)
@@ -108,6 +106,7 @@ const BRANDS = [
   ['nizat.com', 'ניצת הדובדבן', 'ניצת', 'nizat'],
   ['castro.com/lovecard', 'love gift card', 'lovegiftcard', 'לאב גיפט', 'love card', 'לאב קארד'], // Castro group's gift card
   ['powergift.co.il', 'פאוור גיפט', 'פאואר גיפט', 'power gift', 'powergift', 'power card'],
+  ['shemo.co.il', 'מיקי שמו', 'miki shemo', 'shemo', '=שמו'],
   ['365mashbir.co.il', 'המשביר לצרכן', 'המשביר', 'משביר', 'mashbir'],
   // hotels & cinema
   ['isrotel.com', 'ישרוטל', 'isrotel'],
@@ -153,6 +152,7 @@ const LABELS = {
   'bestore.co.il': 'Be פארם',
   'castro.com/lovecard': 'Love Gift Card',
   'powergift.co.il': 'Power Gift',
+  'shemo.co.il': 'מיקי שמו',
 };
 const HEBREW = /[֐-׿]/;
 const clean = (n) => n.replace(/^=/, '');
@@ -192,27 +192,30 @@ const OWN_LOGOS = {
   'cafegreg.co.il': '/brands/cafegreg.png',
   'tivtaam.co.il': '/brands/tivtaam.png',
   'cafecafe.co.il': '/brands/cafecafe.svg',
-  'crocs.co.il': '/brands/crocs.svg',
   'kikocosmetics.com': '/brands/kiko.svg',
   'fox.co.il': '/brands/fox.svg',
   'benedict.co.il': '/brands/benedict.png',
   'toysrus.co.il': { src: '/brands/toysrus.png', wide: true },
-  'dreamcard.co.il': { src: '/brands/dreamcard.png', wide: true },
+  'dreamcard.co.il': '/brands/dreamcard.png', // the gift card itself
   'bershka.com': { src: '/brands/bershka.svg', wide: true },
   'decathlon.co.il': { src: '/brands/decathlon.svg', wide: true },
-  'lastprice.co.il': { src: '/brands/lastprice.svg', wide: true },
+  'lastprice.co.il': { src: '/brands/lastprice.png', wide: true },
   'twentyfourseven.co.il': { src: '/brands/tfs.png', wide: true },
   'stevemadden.co.il': { src: '/brands/stevemadden.png', wide: true },
   'foxhome.co.il': { src: '/brands/foxhome.png', wide: true },
   'japanika.net': { src: '/brands/japanika.png', wide: true },
   'sabon.co.il': { src: '/brands/sabon.png', wide: true },
   'bestore.co.il': '/brands/be.png',
-  'roladin.co.il': '/brands/roladin.png',
+  'roladin.co.il': { src: '/brands/roladin.png', wide: true },
   'castro.com/lovecard': '/brands/lovegiftcard.png',
   'footlocker.co.il': { src: '/brands/footlocker.svg', wide: true },
   'neeman.co.il': { src: '/brands/neeman.png', wide: true },
   'nizat.com': { src: '/brands/nizat.png', wide: true },
-  'powergift.co.il': { src: '/brands/powergift.png', wide: true },
+  'powergift.co.il': '/brands/powergift.png', // the gift card itself
+  'pullandbear.com': { src: '/brands/pullandbear.png', wide: true },
+  'shekem-electric.co.il': { src: '/brands/shekem.png', wide: true },
+  'renuar.co.il': { src: '/brands/renuar.png', wide: true },
+  'shemo.co.il': { src: '/brands/shemo.png', wide: true },
   '365mashbir.co.il': { src: '/brands/mashbir.png', wide: true },
 };
 const ownLogo = (domain) => {

@@ -169,11 +169,12 @@ describe('brand logos', () => {
   it('the second batch: Foot Locker, Roladin, Neeman, Nizat, gift cards, Be, Mashbir', () => {
     const cases = {
       'פוט לוקר': 'footlocker.co.il', רולדין: 'roladin.co.il', 'מאפה נאמן': 'neeman.co.il', 'ניצת הדובדבן': 'nizat.com',
-      'LOVE GIFT CARD': 'castro.com/lovecard', 'Love Gift Card קסטרו': 'castro.com/lovecard', 'Power Gift Card': 'powergift.co.il',
+      'LOVE GIFT CARD': 'castro.com/lovecard', 'Love Gift Card קסטרו': 'castro.com/lovecard', 'Power Gift Card': 'powergift.co.il', 'מיקי שמו': 'shemo.co.il', 'שמו': 'shemo.co.il', SHEMO: 'shemo.co.il',
       'Be פארם': 'bestore.co.il', 'ניו פארם': 'bestore.co.il', 'BE': 'bestore.co.il', 'המשביר לצרכן': '365mashbir.co.il',
     };
     for (const [text, domain] of Object.entries(cases)) expect([text, brandDomainOf(text)]).toEqual([text, domain]);
     expect(brandDomainOf('מועדון נאמנות')).toBeNull();
+    expect(brandDomainOf('שמונה מאות')).toBeNull(); // contains "שמו"
   });
   it('short names only match as a whole word', () => {
     expect(brandDomainOf('פנאי ובילוי')).toBeNull(); // contains "ילו"
@@ -231,13 +232,13 @@ describe('brands board', () => {
     for (const b of BRAND_LIST) expect(brandDomainOf(b.name), b.name).toBe(b.domain);
   });
   it('long wordmarks lead on the board, the square site icon leads on a coupon tile', () => {
-    expect(logoSources('dreamcard.co.il', 'wide')[0]).toBe('/brands/dreamcard.png');
-    expect(logoSources('dreamcard.co.il')[0]).toContain('s2/favicons');
-    expect(logoSources('dreamcard.co.il')[1]).toBe('/brands/dreamcard.png');
-    expect(logoSources('crocs.co.il')[0]).toBe('/brands/crocs.svg');
+    expect(logoSources('roladin.co.il', 'wide')[0]).toBe('/brands/roladin.png');
+    expect(logoSources('roladin.co.il')[0]).toContain('s2/favicons');
+    expect(logoSources('roladin.co.il')[1]).toBe('/brands/roladin.png');
+    expect(logoSources('dreamcard.co.il')[0]).toBe('/brands/dreamcard.png');
   });
   it('dropped brands are no longer recognised', () => {
-    for (const n of ['אמזון', 'נקסט', 'גודי']) expect(brandDomainOf(n), n).toBe(null);
+    for (const n of ['אמזון', 'נקסט', 'גודי', 'עלי אקספרס', 'קרוקס']) expect(brandDomainOf(n), n).toBe(null);
   });
   it('Yeinot Bitan shows Carrefour (the chain was renamed)', () => expect(brandDomainOf('יינות ביתן')).toBe('carrefour.co.il'));
   it('stored logos exist in public/brands', async () => {
