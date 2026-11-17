@@ -14,11 +14,12 @@ function GoogleIcon() {
 }
 
 const POINTS = [
-  { icon: BellRing, text: 'קופונים שעומדים לפוג קופצים במסך הבית' },
-  { icon: Users, text: 'משותף לכל המשפחה, מתעדכן בזמן אמת' },
-  { icon: ShieldCheck, text: 'רק חברי המשפחה רואים את הקופונים' },
+  { icon: BellRing, title: 'תזכורת בזמן', text: 'קופון שעומד לפוג קופץ במסך הבית' },
+  { icon: Users, title: 'לכל המשפחה', text: 'כולם רואים מה יש וכמה נשאר' },
+  { icon: ShieldCheck, title: 'פרטי ובטוח', text: 'רק בני המשפחה רואים את הקופונים' },
 ];
 
+/** Sign-in screen: light liquid background, centred, one clear action. */
 export function LoginPage() {
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
@@ -30,29 +31,32 @@ export function LoginPage() {
       if (!(await signInWithGoogle())) setBusy(false);
     } catch (e) {
       console.error(e);
-      setErr('ההתחברות נכשלה. נסה שוב');
+      setErr('לא הצלחנו להתחבר. כדאי לבדוק את החיבור לאינטרנט ולנסות שוב');
       setBusy(false);
     }
   }
 
   return (
-    <div className="relative flex min-h-[100dvh] flex-col overflow-hidden bg-navy px-6 text-white">
-      <span className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-gold/20 blur-3xl" />
-      <span className="pointer-events-none absolute -bottom-32 -left-24 h-96 w-96 rounded-full bg-[#2C5F7C]/40 blur-3xl" />
+    <div className="relative flex min-h-[100dvh] flex-col overflow-hidden px-6 text-center">
+      <div className="relative mx-auto flex w-full max-w-sm flex-1 flex-col items-center justify-center py-12">
+        <span className="relative">
+          <span className="pointer-events-none absolute -inset-6 rounded-full bg-[radial-gradient(circle,rgba(201,164,91,0.28),transparent_70%)]" />
+          <img src="/icon.svg" alt="" className="relative h-[84px] w-[84px] rounded-[24px] shadow-[0_10px_30px_rgba(10,31,68,0.18)] ring-1 ring-white/80" />
+        </span>
+        <h1 className="mt-6 text-[32px] font-semibold tracking-tight text-navy">CouponVault</h1>
+        <p className="mt-1 text-[15px] font-medium text-gold-dark">הארנק המשפחתי לקופונים ושוברים</p>
+        <p className="mt-3 max-w-[290px] text-[14px] font-light leading-relaxed text-mute/70">
+          שומרים כל קופון פעם אחת, וכל המשפחה יודעת מה יש, כמה נשאר ועד מתי.
+        </p>
 
-      <div className="relative mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-14">
-        <img src="/icon.svg" alt="" className="mb-7 h-20 w-20 rounded-[22px] shadow-hero ring-1 ring-gold/40" />
-        <p className="text-[10px] font-light uppercase tracking-[0.3em] text-gold/80">Family coupons</p>
-        <h1 className="mt-1 text-[34px] font-semibold tracking-tight">CouponVault</h1>
-        <p className="mt-2 text-[15px] font-light leading-relaxed text-white/60">כל הקופונים, השוברים וכרטיסי המתנה של המשפחה. במקום אחד, בלי לפספס אף תוקף.</p>
-
-        <ul className="mt-8 space-y-3">
-          {POINTS.map(({ icon: Icon, text }) => (
-            <li key={text} className="flex items-center gap-3 text-sm font-light text-white/80">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-white/[0.07] ring-1 ring-white/10">
-                <Icon className="h-4 w-4 text-gold" strokeWidth={1.5} />
+        <ul className="mt-8 grid w-full grid-cols-3 gap-2.5">
+          {POINTS.map(({ icon: Icon, title, text }) => (
+            <li key={title} className="glass-card flex flex-col items-center rounded-[18px] px-2 pb-3 pt-3.5">
+              <span className="flex h-9 w-9 items-center justify-center rounded-[12px] bg-gold/[0.12]">
+                <Icon className="h-[18px] w-[18px] text-gold-dark" strokeWidth={1.6} />
               </span>
-              {text}
+              <span className="mt-2 text-[12.5px] font-semibold text-ink">{title}</span>
+              <span className="mt-0.5 text-[11px] font-light leading-snug text-mute/60">{text}</span>
             </li>
           ))}
         </ul>
@@ -61,12 +65,17 @@ export function LoginPage() {
           type="button"
           onClick={login}
           disabled={busy}
-          className="mt-10 flex w-full items-center justify-center gap-3 rounded-[14px] bg-white px-6 py-4 text-[15px] font-semibold text-ink shadow-hero transition active:scale-[0.98] disabled:opacity-70"
+          className="mt-9 flex w-full items-center justify-center gap-3 rounded-[16px] border border-white/90 bg-white px-6 py-[15px] text-[15px] font-semibold text-ink shadow-[0_6px_20px_rgba(10,31,68,0.10),0_1px_3px_rgba(10,31,68,0.06)] transition active:scale-[0.98] disabled:opacity-70"
         >
           <GoogleIcon />
-          {busy ? 'מתחבר…' : 'התחברות עם Google'}
+          {busy ? 'מתחברים…' : 'התחברות עם Google'}
         </button>
-        {err && <p className="mt-4 rounded-[10px] bg-danger/20 px-3 py-2 text-center text-sm">{err}</p>}
+        <p className="mt-3 text-[12px] font-light leading-relaxed text-mute/50">אחרי ההתחברות אפשר ליצור משפחה חדשה, או להצטרף למשפחה עם קוד הזמנה</p>
+        {err && (
+          <p role="alert" className="mt-4 w-full rounded-[12px] bg-danger/10 px-3 py-2 text-sm text-danger">
+            {err}
+          </p>
+        )}
       </div>
     </div>
   );

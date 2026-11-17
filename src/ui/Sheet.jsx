@@ -4,6 +4,7 @@ import { X } from 'lucide-react';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
 import { useSheetDrag } from '@/hooks/useSheetDrag';
+import { useConfirm } from './ConfirmDialog';
 
 /**
  * Scroll the sheet (only the sheet, never the page) so the field is visible, when it's hidden. A field already
@@ -51,21 +52,38 @@ function useFocusedFieldVisible(bodyRef, keyboard) {
  * - Locks the page behind it (iOS-safe); scrolling stays inside the sheet.
  * - Pull down to dismiss: from the handle, or from the content when it's at the top.
  * The back button is handled by the caller (useBackClose).
+ * `unsaved`: there is typed data; closing (X, backdrop, Escape, pull) first asks "close without saving?".
+ * `dragFromContent: false`: only the handle/header pulls the sheet down (for forms).
  */
-export function Sheet({ title, onClose, children, footer, actions, label, tall = false }) {
+export function Sheet({ title, onClose, children, footer, actions, label, tall = false, unsaved = false, dragFromContent = true }) {
   useScrollLock();
   const vp = useVisualViewport();
+  const confirm = useConfirm();
   const sheet = useRef(null);
   const body = useRef(null);
   const handle = useRef(null);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
+  const unsavedRef = useRef(unsaved);
+  unsavedRef.current = unsaved;
+  const asking = useRef(false);
 
-  useSheetDrag(sheet, body, handle, () => closeRef.current());
+  const requestClose = useRef(async () => {
+    if (unsavedRef.current) {
+      if (asking.current) return;
+      asking.current = true;
+      const ok = await confirm({ title: 'לסגור בלי לשמור?', message: 'מה שהוזן עד עכשיו לא יישמר', confirmText: 'סגירה', cancelText: 'המשך עריכה', danger: true });
+      asking.current = false;
+      if (!ok) return;
+    }
+    closeRef.current();
+  }).current;
+
+  useSheetDrag(sheet, body, handle, requestClose, { fromContent: dragFromContent, confirm: () => unsavedRef.current });
   useFocusedFieldVisible(body, vp.keyboard);
 
   useEffect(() => {
-    const onKey = (e) => e.key === 'Escape' && !document.querySelector('[role="alertdialog"]') && closeRef.current();
+    const onKey = (e) => e.key === 'Escape' && !document.querySelector('[role="alertdialog"]') && requestClose();
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
@@ -74,7 +92,7 @@ export function Sheet({ title, onClose, children, footer, actions, label, tall =
 
   return createPortal(
     <div className="fixed inset-x-0 z-50 flex items-end justify-center" style={frame}>
-      <div className="absolute inset-0 animate-fade bg-navy/25 backdrop-blur-[3px]" onClick={onClose} />
+      <div className="absolute inset-0 animate-fade bg-navy/25 backdrop-blur-[3px]" onClick={requestClose} />
       <div
         ref={sheet}
         role="dialog"
@@ -93,7 +111,7 @@ export function Sheet({ title, onClose, children, footer, actions, label, tall =
           <div className="flex items-center gap-2 border-b border-navy/[0.06] px-5 pb-2 pt-0.5">
             <h2 className="min-w-0 flex-1 truncate text-base font-semibold text-ink">{title}</h2>
             {actions}
-            <button type="button" onClick={onClose} className="glass-card rounded-full p-2 text-navy/60 transition-colors" aria-label="סגור">
+            <button type="button" onClick={requestClose} className="glass-card rounded-full p-2 text-navy/60 transition-colors" aria-label="סגור">
               <X className="h-4 w-4" strokeWidth={1.75} />
             </button>
           </div>

@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { ChevronDown, Plus, X, Hash, Type, Gift, Check } from 'lucide-react';
-import { Button, DateInput, Field, Input, LiquidSelect, Segmented, Sheet, TextArea, cx } from '@/ui';
+import { Button, DateInput, Field, Input, LiquidSelect, Segmented, Sheet, Switch, TextArea, cx } from '@/ui';
 import { COUPON_FORMATS, COUPON_TYPES, EXPIRY_PRESETS, hasValue } from '@/domain/constants';
 import { couponFromForm, firstInvalidField, formFromCoupon, validateCouponForm } from '@/domain/couponForm';
 import { usedAmount } from '@/domain/coupon';
@@ -17,6 +17,8 @@ export function CouponFormSheet({ coupon, family, user, categories, stores, onCl
   const [f, setF] = useState(() => formFromCoupon(coupon));
   const [more, setMore] = useState(!!(coupon?.source || coupon?.notes));
   const [errors, setErrors] = useState({});
+  const [initial] = useState(() => JSON.stringify(formFromCoupon(coupon)));
+  const unsaved = JSON.stringify(f) !== initial;
 
   const set = (k, errKey = k) => (e) => {
     const v = e?.target ? e.target.value : e;
@@ -46,6 +48,8 @@ export function CouponFormSheet({ coupon, family, user, categories, stores, onCl
       tall
       title={editing ? 'עריכת קופון' : 'קופון חדש'}
       onClose={onClose}
+      unsaved={unsaved}
+      dragFromContent={false}
       footer={
         <Button variant="primary" size="lg" className="w-full" onClick={save} icon={editing ? Check : Plus} data-testid="coupon-save">
           {editing ? 'שמור שינויים' : 'הוסף קופון'}
@@ -115,7 +119,7 @@ export function CouponFormSheet({ coupon, family, user, categories, stores, onCl
         </div>
 
         {/* code and digital / physical share a row: the format on the left */}
-        <div className="grid grid-cols-[1fr_9.5rem] items-start gap-2">
+        <div className="grid grid-cols-[1fr_8rem] items-start gap-2">
           <Field id="code" label="קוד / מספר שובר" error={errors.code}>
             <Input
               id="code"
@@ -133,6 +137,36 @@ export function CouponFormSheet({ coupon, family, user, categories, stores, onCl
           <Field id="format" label="השובר הוא">
             <Segmented size="sm" name="דיגיטלי או פיזי" value={f.format} onChange={set('format')} options={COUPON_FORMATS} className="h-[46px]" />
           </Field>
+        </div>
+
+        {/* optional 3-digit verification code (like a credit card's), behind a switch */}
+        <div data-field="cvv">
+          <div className="flex min-h-[46px] items-center justify-between gap-3">
+            <label className="flex items-center gap-2.5 text-xs font-medium tracking-wide text-mute">
+              <Switch checked={f.hasCvv} onChange={set('hasCvv', 'cvv')} label="קוד אימות" />
+              קוד אימות
+              <span className="font-light text-mute/45">(לא חובה)</span>
+            </label>
+            {f.hasCvv && (
+              <Input
+                id="cvv"
+                dir="ltr"
+                inputMode="numeric"
+                autoComplete="off"
+                value={f.cvv}
+                onChange={(e) => set('cvv')(e.target.value.replace(/\D/g, '').slice(0, 3))}
+                placeholder="3 ספרות"
+                aria-label="קוד אימות (3 ספרות)"
+                error={errors.cvv}
+                className="w-[8rem] text-center font-mono tracking-[0.35em] placeholder:font-sans placeholder:tracking-normal"
+              />
+            )}
+          </div>
+          {errors.cvv && (
+            <p role="alert" className="mt-1 text-left text-[12px] font-medium text-danger">
+              {errors.cvv}
+            </p>
+          )}
         </div>
 
         <button type="button" className="flex items-center gap-1 text-[13px] font-medium text-gold-dark" onClick={() => setMore((m) => !m)} aria-expanded={more}>

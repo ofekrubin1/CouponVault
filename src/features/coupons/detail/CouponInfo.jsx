@@ -29,19 +29,19 @@ function Row({ icon: Icon, label, children }) {
   );
 }
 
-/** Dashed "tear-off" box with the code and a copy button. */
-export function CouponCode({ code }) {
+/** Dashed "tear-off" box with a code (the coupon code, or its verification code) and a copy button. */
+export function CouponCode({ code, label = 'קוד קופון', copied = 'הקוד הועתק', testId = 'copy-code' }) {
   const toast = useToast();
-  const copy = () => navigator.clipboard?.writeText(code).then(() => toast('הקוד הועתק'), () => toast('ההעתקה נכשלה', 'error'));
+  const copy = () => navigator.clipboard?.writeText(code).then(() => toast(copied), () => toast('ההעתקה נכשלה', 'error'));
   return (
     <button
       type="button"
       onClick={copy}
       className="flex w-full items-center justify-between gap-3 rounded-[18px] border-[1.5px] border-dashed border-gold/60 bg-white/50 px-4 py-3.5 active:bg-gold/10"
-      data-testid="copy-code"
+      data-testid={testId}
     >
       <span className="min-w-0">
-        <span className="block text-right text-[10px] font-medium uppercase tracking-widest text-gold-deep/70">קוד קופון</span>
+        <span className="block text-right text-[10px] font-medium uppercase tracking-widest text-gold-deep/70">{label}</span>
         <span dir="ltr" className="block truncate text-left font-mono text-lg font-semibold tracking-[0.15em] text-navy">
           {code}
         </span>

@@ -3,7 +3,10 @@ import { couponCategories, isPhysical, rebalance } from './coupon';
 import { hasValue } from './constants';
 
 /** Field order, so the form can jump to the first invalid one. */
-export const FIELD_ORDER = ['title', 'store', 'category', 'value', 'code'];
+export const FIELD_ORDER = ['title', 'store', 'category', 'value', 'code', 'cvv'];
+
+/** A verification code (like a credit card's CVV): exactly 3 digits. */
+export const isCvv = (s) => /^\d{3}$/.test(s);
 
 export const formFromCoupon = (coupon) => ({
   title: coupon?.title || '',
@@ -16,6 +19,8 @@ export const formFromCoupon = (coupon) => ({
   value: coupon?.value ?? '',
   expiry: coupon?.expiry || '',
   code: coupon?.code || '',
+  hasCvv: !!coupon?.cvv,
+  cvv: coupon?.cvv || '',
   source: coupon?.source || '',
   notes: coupon?.notes || '',
 });
@@ -30,6 +35,7 @@ export function validateCouponForm(f) {
   if (f.type === 'money' && !(v > 0)) e.value = 'בשובר כספי צריך סכום. שובר למוצר? בחרו "מוצר"';
   if (f.type === 'percent' && v != null && !(v > 0 && v <= 100)) e.value = 'אחוז בין 1 ל-100';
   if (!f.code.trim()) e.code = 'חסר קוד / מספר שובר';
+  if (f.hasCvv && f.cvv.trim() && !isCvv(f.cvv.trim())) e.cvv = 'קוד אימות הוא 3 ספרות';
   return e;
 }
 
@@ -58,6 +64,7 @@ export function couponFromForm(f, existing = null) {
     value,
     expiry: f.expiry || null,
     code: f.code.trim(),
+    cvv: f.hasCvv && isCvv(f.cvv.trim()) ? f.cvv.trim() : '',
     source: f.source.trim(),
     notes: f.notes.trim(),
   };

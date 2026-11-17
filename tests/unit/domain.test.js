@@ -63,6 +63,15 @@ describe('coupon form', () => {
     expect(validateCouponForm({ ...valid, type: 'percent', value: '120' }).value).toBe('אחוז בין 1 ל-100');
     expect(validateCouponForm({ ...valid, type: 'percent', value: '' })).toEqual({});
   });
+  it('verification code: optional, exactly 3 digits when switched on, dropped when switched off', () => {
+    expect(validateCouponForm({ ...valid, hasCvv: true, cvv: '' })).toEqual({});
+    expect(validateCouponForm({ ...valid, hasCvv: true, cvv: '12' }).cvv).toBe('קוד אימות הוא 3 ספרות');
+    expect(validateCouponForm({ ...valid, hasCvv: false, cvv: '12' })).toEqual({});
+    expect(couponFromForm({ ...valid, hasCvv: true, cvv: '407' }).cvv).toBe('407');
+    expect(couponFromForm({ ...valid, hasCvv: false, cvv: '407' }).cvv).toBe('');
+    expect(formFromCoupon({ cvv: '123' })).toMatchObject({ hasCvv: true, cvv: '123' });
+    expect(formFromCoupon(null)).toMatchObject({ hasCvv: false, cvv: '' });
+  });
   it('a product voucher (e.g. a McRoyal meal) needs no amount and stores none', () => {
     const data = couponFromForm({ ...valid, type: 'product', title: 'ארוחת מקרויאל', value: '150' });
     expect(data.type).toBe('product');
@@ -71,7 +80,7 @@ describe('coupon form', () => {
   it('a new category needs a name', () => expect(validateCouponForm({ ...valid, addingCategory: true }).category).toBe('חסר שם לקטגוריה החדשה'));
   it('converts to stored fields (trimmed, typed, several categories incl. a new one)', () => {
     const data = couponFromForm({ ...valid, title: ' שובר ', categories: ['אופנה', 'בית'], addingCategory: true, newCategory: ' דלק ', expiry: '' });
-    expect(data).toEqual({ title: 'שובר', store: 'זארה', categories: ['אופנה', 'בית', 'דלק'], category: 'אופנה', type: 'money', format: 'digital', value: 200, expiry: null, code: 'Z-1', source: '', notes: '' });
+    expect(data).toEqual({ title: 'שובר', store: 'זארה', categories: ['אופנה', 'בית', 'דלק'], category: 'אופנה', type: 'money', format: 'digital', value: 200, expiry: null, code: 'Z-1', cvv: '', source: '', notes: '' });
   });
   it('no duplicate categories', () => expect(couponFromForm({ ...valid, categories: ['בית'], addingCategory: true, newCategory: 'בית' }).categories).toEqual(['בית']));
   it('an old coupon with a single category opens with it selected', () => expect(formFromCoupon({ title: 'x', category: 'אופנה' }).categories).toEqual(['אופנה']));

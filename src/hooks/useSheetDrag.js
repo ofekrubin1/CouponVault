@@ -1,17 +1,23 @@
 import { useEffect, useRef } from 'react';
 
 const SNAP = 'transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)';
-const CLOSE_DISTANCE = 110;
-const CLOSE_VELOCITY = 0.55; // px/ms
+// A deliberate pull closes; a small or slow tug snaps back (a quick flick also needs some distance).
+const CLOSE_DISTANCE = 150;
+const CLOSE_VELOCITY = 0.9; // px/ms
+const FLICK_MIN_DISTANCE = 60;
 
 /**
  * Pull a bottom sheet down to dismiss it, like iOS: from the handle/header, or from anywhere in the content
  * while it's scrolled to the top (e.g. the coupon card). Pulling up / scrolling down stays a normal scroll.
  * Moves the DOM directly (no React re-render per frame). Touch for phones, mouse on the handle for desktop.
+ * Options: `fromContent: false` limits the pull to the handle/header (forms, where a pull is usually a scroll);
+ * `confirm()` true means closing needs the user's OK, so the sheet snaps back and onClose asks.
  */
-export function useSheetDrag(sheetRef, bodyRef, handleRef, onClose) {
+export function useSheetDrag(sheetRef, bodyRef, handleRef, onClose, { fromContent = true, confirm } = {}) {
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
+  const optsRef = useRef({ fromContent, confirm });
+  optsRef.current = { fromContent, confirm };
 
   useEffect(() => {
     const sheet = sheetRef.current;
@@ -24,7 +30,12 @@ export function useSheetDrag(sheetRef, bodyRef, handleRef, onClose) {
       sheet.style.transform = y > 0 ? `translate3d(0,${y}px,0)` : '';
     };
     const finish = (dy, velocity) => {
-      if (dy > CLOSE_DISTANCE || velocity > CLOSE_VELOCITY) {
+      if (dy > CLOSE_DISTANCE || (velocity > CLOSE_VELOCITY && dy > FLICK_MIN_DISTANCE)) {
+        if (optsRef.current.confirm?.()) {
+          move(0, true);
+          closeRef.current();
+          return;
+        }
         move(sheet.offsetHeight, true);
         setTimeout(() => closeRef.current(), 220);
       } else move(0, true);
@@ -39,7 +50,8 @@ export function useSheetDrag(sheetRef, bodyRef, handleRef, onClose) {
       }
       const p = e.touches[0];
       const inBody = body.contains(e.target);
-      t = { x: p.clientX, y: p.clientY, lastY: p.clientY, lastT: performance.now(), v: 0, dy: 0, eligible: !inBody || body.scrollTop <= 0, mode: null };
+      const eligible = inBody ? optsRef.current.fromContent && body.scrollTop <= 0 : true;
+      t = { x: p.clientX, y: p.clientY, lastY: p.clientY, lastT: performance.now(), v: 0, dy: 0, eligible, mode: null };
     };
     const onTouchMove = (e) => {
       if (!t || !t.eligible) return;

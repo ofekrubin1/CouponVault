@@ -165,3 +165,57 @@ test('T53 the new-coupon form fits one screen; "more details" makes it grow', as
   await expect(s.getByLabel('הערות')).toBeAttached();
   expect(await fits()).toBe(false);
 });
+
+test('T60 (reported) the new-coupon form does not close from a pull inside it; with typed data closing asks first', async ({ page }) => {
+  await setup(page);
+  await page.getByTestId('fab-add').click();
+  const s = sheet(page, 'קופון חדש');
+  await page.waitForTimeout(400);
+  // a pull down inside the form is a scroll, never a close
+  await touchDrag(page, s.getByText('קטגוריות'), 260);
+  await expect(s).toBeVisible();
+  await s.getByLabel('שם הקופון').fill('חצי מוכן');
+  // a real pull on the handle / header: asks before throwing away what was typed
+  await touchDrag(page, s.getByRole('heading', { name: 'קופון חדש' }), 240);
+  const ask = page.getByRole('alertdialog');
+  await expect(ask).toContainText('לסגור בלי לשמור?');
+  await ask.getByRole('button', { name: 'המשך עריכה' }).click();
+  await expect(s).toBeVisible();
+  await expect(s.getByLabel('שם הקופון')).toHaveValue('חצי מוכן');
+  // X asks too, and "close" closes
+  await s.getByRole('button', { name: 'סגור' }).click();
+  await page.getByRole('alertdialog').getByRole('button', { name: 'סגירה' }).click();
+  await expect(s).toBeHidden();
+  // an untouched form closes straight away
+  await page.getByTestId('fab-add').click();
+  await expect(s).toBeVisible();
+  await s.getByRole('button', { name: 'סגור' }).click();
+  await expect(s).toBeHidden();
+  await expect(page.getByRole('alertdialog')).toHaveCount(0);
+});
+
+test('T61 optional 3-digit verification code behind a switch, shown and copyable on the coupon', async ({ page }) => {
+  const { familyId } = await setup(page);
+  await page.getByTestId('fab-add').click();
+  const s = sheet(page, 'קופון חדש');
+  await s.getByLabel('שם הקופון').fill('כרטיס מתנה');
+  await s.getByLabel('איפה אפשר לממש').fill('דרים קארד');
+  await s.locator('#value').fill('250');
+  await s.locator('#code').fill('5326-1188');
+  await expect(s.locator('#cvv')).toHaveCount(0);
+  await s.getByRole('switch', { name: 'קוד אימות' }).click();
+  const cvv = s.locator('#cvv');
+  await cvv.fill('4a07');
+  await expect(cvv).toHaveValue('407'); // digits only, at most 3
+  await cvv.fill('40');
+  await page.getByTestId('coupon-save').click();
+  await expect(s.getByText('קוד אימות הוא 3 ספרות')).toBeVisible();
+  await cvv.fill('407');
+  await page.getByTestId('coupon-save').click();
+  await expect(s).toBeHidden();
+  const [c] = await serverCoupons(page, familyId);
+  expect(c.cvv).toBe('407');
+  const d = await openTicket(page, 'כרטיס מתנה');
+  await expect(d.getByTestId('copy-cvv')).toContainText('407');
+  await expect(d.getByTestId('copy-cvv')).toContainText('קוד אימות');
+});
