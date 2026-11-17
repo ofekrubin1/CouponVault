@@ -231,6 +231,10 @@ test('T59 the coupon type is a drop-down beside the name: pick, outside tap and 
   const [t, n] = [await type.boundingBox(), await s.getByLabel('שם הקופון').boundingBox()];
   expect(Math.abs(t.y + t.height / 2 - (n.y + n.height / 2))).toBeLessThan(3);
   expect(t.x).toBeLessThan(n.x);
+  // code and digital / physical share a row, the format on the left
+  const [c, fm] = [await s.locator('#code').boundingBox(), await s.getByRole('radiogroup', { name: 'דיגיטלי או פיזי' }).boundingBox()];
+  expect(Math.abs(c.y + c.height / 2 - (fm.y + fm.height / 2))).toBeLessThan(3);
+  expect(fm.x).toBeLessThan(c.x);
 
   await type.click();
   const menu = s.getByRole('listbox', { name: 'סוג הקופון' });

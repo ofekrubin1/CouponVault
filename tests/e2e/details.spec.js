@@ -96,6 +96,16 @@ test('T50 known chains get their logo; unknown stores keep the category icon', a
   await expect(ticket(page, 'מתנה').getByTestId('brand-logo')).toHaveCount(0);
 });
 
+test('T50b (reported) a Dream Card coupon shows the real Dream Card logo on a wide tile, not the site icon', async ({ page }) => {
+  await page.route('**/s2/favicons**', (route) => route.fulfill({ path: 'public/icon-192.png', contentType: 'image/png' }));
+  const { familyId } = await setup(page);
+  await seed(page, familyId, [{ title: 'גיפט קארד', store: 'דרים קארד', type: 'money', value: 300 }]);
+  const logo = ticket(page, 'גיפט קארד').getByTestId('brand-logo');
+  await expect(logo.locator('img')).toHaveAttribute('src', '/brands/dreamcard.png');
+  const box = await logo.boundingBox();
+  expect(box.width).toBeGreaterThan(box.height * 1.8);
+});
+
 test('T51 a field focused low in the form is scrolled into view', async ({ page }) => {
   await setup(page);
   await page.getByTestId('fab-add').click();

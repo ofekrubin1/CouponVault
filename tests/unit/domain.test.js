@@ -4,7 +4,7 @@ import { planRedemption, rebalance, summarize, isExpiringSoon, balanceOf } from 
 import { validateCouponForm, couponFromForm, formFromCoupon, firstInvalidField } from '@/domain/couponForm';
 import { couponCategories } from '@/domain/coupon';
 import { isUrl, urlHost, displayStore, splitLinks } from '@/domain/links';
-import { brandDomain, brandDomainOf, logoUrl, logoSources, isOwnLogo, BRAND_LIST, searchBrands } from '@/domain/brands';
+import { brandDomain, brandDomainOf, logoUrl, logoSources, isOwnLogo, isWideLogo, BRAND_LIST, searchBrands } from '@/domain/brands';
 import { EMPTY_FILTERS, filterCoupons, categoryCounts, typeCounts, toggleIn, activeFilterCount, voucherBalance } from '@/domain/filters';
 import { normalizeInviteCode, familyCategories, membersOf, pickCurrentFamily, inviteMessage, alertDaysFor } from '@/domain/family';
 import { NO_CATEGORY } from '@/domain/constants';
@@ -231,12 +231,11 @@ describe('brands board', () => {
   it('every board name is recognised on a coupon as that brand', () => {
     for (const b of BRAND_LIST) expect(brandDomainOf(b.name), b.name).toBe(b.domain);
   });
-  it('long wordmarks lead on the board, the square site icon leads on a coupon tile', () => {
-    expect(logoSources('roladin.co.il', 'wide')[0]).toBe('/brands/roladin.png');
-    expect(logoSources('roladin.co.il')[0]).toContain('s2/favicons');
-    expect(logoSources('roladin.co.il')[1]).toBe('/brands/roladin.png');
-    expect(logoSources('powergift.co.il')[0]).toBe('/brands/powergift.png');
-    expect(logoSources('kravitz.co.il')[0]).toBe('/brands/kravitz.png');
+  it('a stored logo always comes first (also long wordmarks, e.g. Dream Card), then the site icon', () => {
+    expect(logoSources('dreamcard.co.il')).toEqual(['/brands/dreamcard.png', logoUrl('dreamcard.co.il')]);
+    expect(isWideLogo('dreamcard.co.il')).toBe(true);
+    expect(isWideLogo('powergift.co.il')).toBe(false);
+    expect(logoSources('zara.com')).toEqual([logoUrl('zara.com')]);
   });
   it('dropped brands are no longer recognised', () => {
     for (const n of ['אמזון', 'נקסט', 'גודי', 'עלי אקספרס', 'קרוקס']) expect(brandDomainOf(n), n).toBe(null);
@@ -245,7 +244,7 @@ describe('brands board', () => {
   it('stored logos exist in public/brands', async () => {
     const { existsSync } = await import('node:fs');
     for (const b of BRAND_LIST) {
-      const own = logoSources(b.domain, 'wide').find(isOwnLogo);
+      const own = logoSources(b.domain).find(isOwnLogo);
       if (own) expect(existsSync(`public${own}`), own).toBe(true);
     }
   });

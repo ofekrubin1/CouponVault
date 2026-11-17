@@ -80,11 +80,6 @@ export function CouponFormSheet({ coupon, family, user, categories, stores, onCl
           />
         </Field>
 
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-xs font-medium tracking-wide text-mute">השובר הוא</span>
-          <Segmented size="sm" name="דיגיטלי או פיזי" value={f.format} onChange={set('format')} options={COUPON_FORMATS} className="w-[11.5rem]" />
-        </div>
-
         {/* amount and expiry share a row; without an amount the expiry takes the whole row */}
         <div className={cx('grid gap-3', hasValue(f.type) && 'grid-cols-2')}>
           {hasValue(f.type) && (
@@ -119,20 +114,26 @@ export function CouponFormSheet({ coupon, family, user, categories, stores, onCl
           </Field>
         </div>
 
-        <Field id="code" label="קוד / מספר שובר" error={errors.code}>
-          <Input
-            id="code"
-            icon={Hash}
-            dir="ltr"
-            className="text-left font-mono tracking-wider placeholder:text-right placeholder:font-sans placeholder:tracking-normal"
-            value={f.code}
-            onChange={set('code')}
-            placeholder="למשל: 1445-3680"
-            error={errors.code}
-            autoCapitalize="characters"
-            autoComplete="off"
-          />
-        </Field>
+        {/* code and digital / physical share a row: the format on the left */}
+        <div className="grid grid-cols-[1fr_9.5rem] items-start gap-2">
+          <Field id="code" label="קוד / מספר שובר" error={errors.code}>
+            <Input
+              id="code"
+              icon={Hash}
+              dir="ltr"
+              className="text-left font-mono tracking-wider placeholder:text-right placeholder:font-sans placeholder:tracking-normal"
+              value={f.code}
+              onChange={set('code')}
+              placeholder="למשל: 1445-3680"
+              error={errors.code}
+              autoCapitalize="characters"
+              autoComplete="off"
+            />
+          </Field>
+          <Field id="format" label="השובר הוא">
+            <Segmented size="sm" name="דיגיטלי או פיזי" value={f.format} onChange={set('format')} options={COUPON_FORMATS} className="h-[46px]" />
+          </Field>
+        </div>
 
         <button type="button" className="flex items-center gap-1 text-[13px] font-medium text-gold-dark" onClick={() => setMore((m) => !m)} aria-expanded={more}>
           פרטים נוספים

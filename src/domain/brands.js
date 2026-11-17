@@ -176,8 +176,8 @@ export const brandDomain = (coupon) => brandDomainOf(coupon.store) || brandDomai
 
 /**
  * Logos stored with the app (public/brands), taken from each brand's current site: for brands whose site icon is
- * tiny / generic / outdated / only part of the logo, or whose site is gone. `wide` marks a long wordmark: it is
- * shown on the brands board, while the small square tile on a coupon keeps the brand's square site icon.
+ * tiny / generic / outdated / only part of the logo, or whose site is gone. `wide` marks a long wordmark: on a
+ * coupon it gets a tile twice as wide as it is tall.
  */
 const OWN_LOGOS = {
   'buyme.co.il': '/brands/buyme.svg',
@@ -232,13 +232,12 @@ export const isOwnLogo = (src) => src.startsWith('/brands/');
 /** Public logo image for a domain (Google's site-icon service; no key needed). */
 export const logoUrl = (domain) => `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
 
-/**
- * Images to try for a brand, best first. `shape` is the space it's shown in: 'square' (coupon tile) or 'wide'
- * (brands board). A long wordmark is unreadable in a small square, so there the site icon comes first.
- */
-export function logoSources(domain, shape = 'square') {
+/** Images to try for a brand, best first: the logo stored with the app, then the brand's site icon. */
+export function logoSources(domain) {
   const own = ownLogo(domain);
   const icon = logoUrl(domain);
-  if (!own) return [icon];
-  return own.wide && shape === 'square' ? [icon, own.src] : [own.src, icon];
+  return own ? [own.src, icon] : [icon];
 }
+
+/** True when the brand's stored logo is a long wordmark, shown on a wider tile so it stays readable. */
+export const isWideLogo = (domain) => !!ownLogo(domain)?.wide;
