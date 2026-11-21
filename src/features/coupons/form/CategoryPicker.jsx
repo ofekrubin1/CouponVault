@@ -6,7 +6,8 @@ import { CategoryIcon } from '../CategoryTile';
 export function CategoryPicker({ categories, selected, onToggle, adding, onAdding, newName, onNewName, error }) {
   return (
     <>
-      <div className="flex flex-wrap gap-x-1 gap-y-2">
+      {/* an even grid: a family's own category (e.g. "דרים קארד") gets the same cell as the rest, not half a row */}
+      <div className="grid grid-cols-3 gap-1.5">
         {categories.map((c) => {
           const on = selected.includes(c);
           return (
@@ -15,10 +16,10 @@ export function CategoryPicker({ categories, selected, onToggle, adding, onAddin
               type="button"
               aria-pressed={on}
               onClick={() => onToggle(c)}
-              className={cx('flex flex-auto items-center justify-center gap-1 whitespace-nowrap rounded-[11px] border px-[7px] py-2 text-[12.5px] font-medium transition-colors', on ? 'chip-on' : 'border-white/80 bg-white/60 text-mute')}
+              className={cx('flex min-w-0 items-center justify-center gap-1 whitespace-nowrap rounded-[11px] border px-[7px] py-2 text-[12.5px] font-medium transition-colors', on ? 'chip-on' : 'border-white/80 bg-white/60 text-mute')}
             >
               {on ? <Check className="h-3 w-3 text-accent" strokeWidth={2.4} /> : <CategoryIcon category={c} className="h-3 w-3" />}
-              {c}
+              <span className="truncate">{c}</span>
             </button>
           );
         })}
@@ -27,7 +28,7 @@ export function CategoryPicker({ categories, selected, onToggle, adding, onAddin
           aria-pressed={adding}
           onClick={() => onAdding(!adding)}
           className={cx(
-            'flex flex-auto items-center justify-center gap-1 whitespace-nowrap rounded-[11px] border border-dashed px-[7px] py-2 text-[12.5px] font-medium',
+            'flex min-w-0 items-center justify-center gap-1 whitespace-nowrap rounded-[11px] border border-dashed px-[7px] py-2 text-[12.5px] font-medium',
             adding ? 'border-gold bg-gold/10 text-gold-deep' : 'border-gold/50 text-gold-dark',
           )}
         >

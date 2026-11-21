@@ -97,6 +97,7 @@ export function summarize(active, alertDays, now) {
     activeCount: active.length,
     expiringCount: active.filter((c) => isExpiringSoon(c, alertDays, now)).length,
     moneyCount: vouchers.length,
+    productCount: active.filter((c) => c.type === 'product').length,
     balance: round2(vouchers.reduce((s, c) => s + balanceOf(c), 0)),
   };
 }

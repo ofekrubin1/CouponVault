@@ -31,7 +31,7 @@ describe('balances', () => {
   it('balanceOf falls back to the face value', () => expect(balanceOf(voucher({ balance: undefined }))).toBe(200));
   it('summary counts and sums', () => {
     const active = [voucher({ balance: 120, expiry: '2026-11-20' }), voucher({ id: 'b', balance: 80 }), { id: 'p', status: 'active', type: 'percent', value: 10 }];
-    expect(summarize(active, 14, NOW)).toEqual({ activeCount: 3, expiringCount: 1, moneyCount: 2, balance: 200 });
+    expect(summarize(active, 14, NOW)).toEqual({ activeCount: 3, expiringCount: 1, moneyCount: 2, productCount: 0, balance: 200 });
   });
   it('expiring soon = within the window, not expired', () => {
     expect(isExpiringSoon({ expiry: '2026-11-29' }, 14, NOW)).toBe(true);

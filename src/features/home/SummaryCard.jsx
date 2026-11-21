@@ -1,37 +1,41 @@
-import { Card, cx } from '@/ui';
+import { cx } from '@/ui';
 import { money } from '@/domain/format';
 
-function Stat({ value, label, highlight }) {
+function Stat({ value, label, warn, testId }) {
   return (
-    <div className="rounded-[14px] border border-white/70 bg-white/45 px-3 py-2.5">
-      <p className={cx('text-[19px] font-semibold', highlight ? 'text-gold-dark' : 'text-ink')}>{value}</p>
-      <p className="text-[11px] font-light text-mute/55">{label}</p>
+    <div className="px-1 text-center" data-testid={testId}>
+      <p className={cx('text-[19px] font-semibold leading-tight', warn ? 'text-[#F2C46B]' : 'text-white')}>{value}</p>
+      <p className="mt-0.5 text-[11px] font-light text-white/55">{label}</p>
     </div>
   );
 }
 
-/** Hero card at the top of the home screen (TripFlow's trip summary card, liquid style). */
-export function SummaryCard({ balance, activeCount, expiringCount, moneyCount }) {
+/** Hero card at the top of the home screen: a night-navy card with a gold glow, the balance in large white type. */
+export function SummaryCard({ balance, activeCount, expiringCount, moneyCount, productCount }) {
   return (
-    <Card className="overflow-hidden" data-testid="summary-card">
-      {/* liquid glow inside the glass */}
-      <span className="pointer-events-none absolute -left-16 -top-20 h-52 w-52 rounded-full bg-[radial-gradient(circle,rgba(201,164,91,0.32),transparent_68%)]" />
-      <span className="pointer-events-none absolute -bottom-24 right-6 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(90,130,210,0.22),transparent_68%)]" />
-      <span className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white to-transparent" />
+    <section
+      className="relative overflow-hidden rounded-[24px] p-5 text-white shadow-[0_14px_30px_rgba(10,31,68,0.28)]"
+      style={{ background: 'radial-gradient(120% 90% at 0% 0%, #1d3a73 0%, #0A1F44 55%, #081733 100%)' }}
+      data-testid="summary-card"
+    >
+      {/* gold glow in the top-left corner and a thin highlight on the top edge */}
+      <span className="pointer-events-none absolute -left-16 -top-20 h-52 w-52 rounded-full bg-[radial-gradient(circle,rgba(201,164,91,0.35),transparent_68%)]" />
+      <span className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
 
       <div className="relative">
-        <div>
-          <p className="eyebrow">יתרה בשוברים</p>
-          <p dir="ltr" className="mt-1 text-right text-[34px] font-semibold leading-none tracking-tight text-navy" data-testid="summary-balance">
-            {money(balance)}
-          </p>
-          <p className="mt-1.5 text-[11px] font-light text-mute/55">{moneyCount ? `ב-${moneyCount} שוברים כספיים` : 'אין שוברים כספיים פעילים'}</p>
+        <p className="text-[11px] font-medium tracking-[0.08em] text-[#E6CF9A]">יתרה בשוברים</p>
+        <p dir="ltr" className="mt-1.5 text-right text-[40px] font-bold leading-none tracking-tight" data-testid="summary-balance">
+          <span className="mr-1 align-baseline text-[22px] font-semibold text-[#E6CF9A]">₪</span>
+          {money(balance).slice(1)}
+        </p>
+        <p className="mt-1.5 text-[12px] font-light text-white/60">{moneyCount ? `ב-${moneyCount} שוברים כספיים` : 'אין שוברים כספיים פעילים'}</p>
+
+        <div className="mt-4 grid grid-cols-3 divide-x divide-x-reverse divide-white/10 border-t border-white/10 pt-3.5">
+          <Stat value={activeCount} label="קופונים פעילים" />
+          <Stat value={expiringCount} label="פגים בקרוב" warn={expiringCount > 0} />
+          <Stat value={productCount ?? 0} label="שוברי מוצר" />
         </div>
       </div>
-      <div className="relative mt-4 grid grid-cols-2 gap-2">
-        <Stat value={activeCount} label="קופונים פעילים" />
-        <Stat value={expiringCount} label="פגים בקרוב" highlight={expiringCount > 0} />
-      </div>
-    </Card>
+    </section>
   );
 }

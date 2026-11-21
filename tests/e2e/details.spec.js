@@ -227,3 +227,25 @@ test('T61 optional 3-digit verification code behind a switch, shown and copyable
   await expect(d.getByTestId('copy-cvv')).toContainText('407');
   await expect(d.getByTestId('copy-cvv')).toContainText('קוד אימות');
 });
+
+test('T62 a family category gets the same chip width as the built-in ones (even grid)', async ({ page }) => {
+  await setup(page);
+  await page.getByTestId('fab-add').click();
+  let s = sheet(page, 'קופון חדש');
+  await s.getByLabel('שם הקופון').fill('שובר');
+  await s.getByLabel('איפה אפשר לממש').fill('דרים קארד');
+  await s.getByRole('button', { name: 'חדשה' }).click();
+  await s.getByPlaceholder('שם הקטגוריה החדשה').fill('דרים קארד');
+  await s.locator('#value').fill('100');
+  await s.getByLabel('קוד / מספר שובר').fill('D-1');
+  await s.getByTestId('coupon-save').click();
+  await expect(s).toBeHidden();
+  await page.getByTestId('fab-add').click();
+  s = sheet(page, 'קופון חדש');
+  await page.waitForTimeout(450); // sheet slide-in
+  const own = await s.getByRole('button', { name: 'דרים קארד', exact: true }).boundingBox();
+  const builtIn = await s.getByRole('button', { name: 'כללי', exact: true }).boundingBox();
+  const add = await s.getByRole('button', { name: 'חדשה' }).boundingBox();
+  expect(Math.abs(own.width - builtIn.width)).toBeLessThan(2);
+  expect(Math.abs(add.width - builtIn.width)).toBeLessThan(2);
+});
