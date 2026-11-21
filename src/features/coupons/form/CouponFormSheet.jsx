@@ -1,10 +1,9 @@
 import { useRef, useState } from 'react';
 import { ChevronDown, Plus, X, Hash, Type, Gift, Check } from 'lucide-react';
 import { Button, DateInput, Field, Input, LiquidSelect, Segmented, Sheet, Switch, TextArea, cx } from '@/ui';
-import { COUPON_FORMATS, COUPON_TYPES, EXPIRY_PRESETS, hasValue } from '@/domain/constants';
+import { COUPON_FORMATS, COUPON_TYPES, hasValue } from '@/domain/constants';
 import { couponFromForm, firstInvalidField, formFromCoupon, validateCouponForm } from '@/domain/couponForm';
 import { usedAmount } from '@/domain/coupon';
-import { presetDate } from '@/domain/format';
 import { useCouponActions } from '../useCouponActions';
 import { CategoryPicker } from './CategoryPicker';
 import { StoreInput } from './StoreInput';
@@ -15,10 +14,13 @@ export function CouponFormSheet({ coupon, family, user, categories, stores, onCl
   const actions = useCouponActions(family, user);
   const body = useRef(null);
   const [f, setF] = useState(() => formFromCoupon(coupon));
-  const [more, setMore] = useState(!!(coupon?.source || coupon?.notes));
+  const [more, setMore] = useState(!!(coupon?.source || coupon?.notes || coupon?.format === 'physical'));
   const [errors, setErrors] = useState({});
   const [initial] = useState(() => JSON.stringify(formFromCoupon(coupon)));
   const unsaved = JSON.stringify(f) !== initial;
+  // the coupon's own categories stay listed (e.g. one the family removed) so they can still be unticked
+  const [ownCats] = useState(() => formFromCoupon(coupon).categories);
+  const pickable = [...new Set([...categories, ...ownCats])];
 
   const set = (k, errKey = k) => (e) => {
     const v = e?.target ? e.target.value : e;
@@ -73,7 +75,7 @@ export function CouponFormSheet({ coupon, family, user, categories, stores, onCl
 
         <Field id="category" label="קטגוריות" aside={<span className="text-[10px] font-light text-mute/45">אפשר לבחור כמה</span>} error={errors.category}>
           <CategoryPicker
-            categories={categories}
+            categories={pickable}
             selected={f.categories}
             onToggle={(c) => set('categories')(f.categories.includes(c) ? f.categories.filter((x) => x !== c) : [...f.categories, c])}
             adding={f.addingCategory}
@@ -103,41 +105,23 @@ export function CouponFormSheet({ coupon, family, user, categories, stores, onCl
           )}
           <Field id="expiry" label="בתוקף עד">
             <DateInput id="expiry" value={f.expiry} onChange={set('expiry')} placeholder="ללא תוקף" />
-            <div className="flex gap-1.5 pt-1">
-              {(hasValue(f.type) ? EXPIRY_PRESETS.filter((p) => p.months >= 3) : EXPIRY_PRESETS).map((p) => (
-                <button
-                  key={p.months}
-                  type="button"
-                  onClick={() => set('expiry')(presetDate(p.months))}
-                  className="flex-auto whitespace-nowrap rounded-[8px] bg-navy/5 px-1.5 py-1 text-[11px] font-medium text-navy/60 active:bg-navy/10"
-                >
-                  {p.label}
-                </button>
-              ))}
-            </div>
           </Field>
         </div>
 
-        {/* code and digital / physical share a row: the format on the left */}
-        <div className="grid grid-cols-[1fr_8rem] items-start gap-2">
-          <Field id="code" label="קוד / מספר שובר" error={errors.code}>
-            <Input
-              id="code"
-              icon={Hash}
-              dir="ltr"
-              className="text-left font-mono tracking-wider placeholder:text-right placeholder:font-sans placeholder:tracking-normal"
-              value={f.code}
-              onChange={set('code')}
-              placeholder="למשל: 1445-3680"
-              error={errors.code}
-              autoCapitalize="characters"
-              autoComplete="off"
-            />
-          </Field>
-          <Field id="format" label="השובר הוא">
-            <Segmented size="sm" name="דיגיטלי או פיזי" value={f.format} onChange={set('format')} options={COUPON_FORMATS} className="h-[46px]" />
-          </Field>
-        </div>
+        <Field id="code" label="קוד / מספר שובר" error={errors.code}>
+          <Input
+            id="code"
+            icon={Hash}
+            dir="ltr"
+            className="text-left font-mono tracking-wider placeholder:text-right placeholder:font-sans placeholder:tracking-normal"
+            value={f.code}
+            onChange={set('code')}
+            placeholder="למשל: 1445-3680"
+            error={errors.code}
+            autoCapitalize="characters"
+            autoComplete="off"
+          />
+        </Field>
 
         {/* optional 3-digit verification code (like a credit card's), behind a switch */}
         <div data-field="cvv">
@@ -175,6 +159,9 @@ export function CouponFormSheet({ coupon, family, user, categories, stores, onCl
         </button>
         {more && (
           <div className="space-y-3">
+            <Field id="format" label="השובר הוא">
+              <Segmented name="דיגיטלי או פיזי" value={f.format} onChange={set('format')} options={COUPON_FORMATS} />
+            </Field>
             <Field id="source" label="התקבל מ-">
               <Input id="source" icon={Gift} value={f.source} onChange={set('source')} placeholder="למשל: מתנה מהעבודה, יום הולדת" />
             </Field>

@@ -1,6 +1,17 @@
 // Domain constants: plain data only (no React, no icons). Display details live in features/coupons/categoryStyle.js.
 
-export const DEFAULT_CATEGORIES = ['מסעדות', 'סופרמרקט', 'אופנה', 'אלקטרוניקה', 'בית', 'פנאי ובילוי', 'טיפוח', 'אחר'];
+export const DEFAULT_CATEGORIES = ['כללי', 'אוכל', 'סופרמרקט', 'ביגוד'];
+
+/** Built-in categories of earlier versions → the one they now belong to (applied when reading a coupon). */
+export const LEGACY_CATEGORIES = {
+  מסעדות: 'אוכל',
+  אופנה: 'ביגוד',
+  אחר: 'כללי',
+  אלקטרוניקה: 'כללי',
+  בית: 'כללי',
+  'פנאי ובילוי': 'כללי',
+  טיפוח: 'כללי',
+};
 
 /** Filter key for coupons without a category. */
 export const NO_CATEGORY = 'ללא קטגוריה';
@@ -26,13 +37,5 @@ export const couponTypeLabel = (key) => COUPON_TYPES.find((t) => t.key === key)?
 
 export const DEFAULT_ALERT_DAYS = 14;
 export const ALERT_DAY_OPTIONS = [7, 14, 30, 60];
-
-/** Quick expiry presets for the coupon form. */
-export const EXPIRY_PRESETS = [
-  { label: 'חודש', months: 1 },
-  { label: '3 חודשים', months: 3 },
-  { label: 'חצי שנה', months: 6 },
-  { label: 'שנה', months: 12 },
-];
 
 export const INVITE_CODE_LENGTH = 6;

@@ -1,16 +1,12 @@
 // How each category looks (icon + colour). Display concern, so it lives with the coupon UI, not the domain.
-import { Utensils, ShoppingCart, Shirt, Smartphone, Sofa, Ticket, Sparkles, Ellipsis, Tag } from 'lucide-react';
+import { Utensils, ShoppingCart, Shirt, LayoutGrid, Ticket, Tag } from 'lucide-react';
 import { NO_CATEGORY } from '@/domain/constants';
 
 const STYLES = {
-  מסעדות: { icon: Utensils, color: '#B8943F' },
+  כללי: { icon: LayoutGrid, color: '#4A7CA5' },
+  אוכל: { icon: Utensils, color: '#B8943F' },
   סופרמרקט: { icon: ShoppingCart, color: '#2C5F7C' },
-  אופנה: { icon: Shirt, color: '#8B6F47' },
-  אלקטרוניקה: { icon: Smartphone, color: '#0A1F44' },
-  בית: { icon: Sofa, color: '#50535A' },
-  'פנאי ובילוי': { icon: Ticket, color: '#4A7CA5' },
-  טיפוח: { icon: Sparkles, color: '#9A5B78' },
-  אחר: { icon: Ellipsis, color: '#8A8F98' },
+  ביגוד: { icon: Shirt, color: '#8B6F47' },
 };
 const CUSTOM = { icon: Tag, color: '#8B7355' };
 const NONE = { icon: Ticket, color: '#0A1F44' };

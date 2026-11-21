@@ -3,13 +3,13 @@ import { addCoupon, chooseType, isoIn, openTicket, seed, serverCoupons, setup, s
 
 test('T12 add a money voucher with every field', async ({ page }) => {
   const { familyId } = await setup(page);
-  await addCoupon(page, { title: 'Buyme 200', store: 'Buyme', category: 'פנאי ובילוי', value: 200, expiry: isoIn(90), code: 'BM-7781' });
+  await addCoupon(page, { title: 'Buyme 200', store: 'Buyme', category: 'כללי', value: 200, expiry: isoIn(90), code: 'BM-7781' });
   await expect(page.getByRole('status')).toHaveText('הקופון נוסף');
   const t = ticket(page, 'Buyme 200');
   await expect(t).toBeVisible();
   await expect(t).toContainText('₪200');
   await expect(t).toContainText('Buyme');
-  await expect(t).toContainText('פנאי ובילוי');
+  await expect(t).toContainText('כללי');
   await expect.poll(async () => (await serverCoupons(page, familyId)).length).toBe(1);
   const [saved] = await serverCoupons(page, familyId);
   expect(saved).toMatchObject({ title: 'Buyme 200', store: 'Buyme', type: 'money', value: 200, balance: 200, code: 'BM-7781', status: 'active', expiry: isoIn(90) });
@@ -140,21 +140,16 @@ test('T20 a new category added in the form is saved for the family', async ({ pa
   await expect(sheet(page, 'קופון חדש').getByRole('button', { name: 'דלק', exact: true })).toBeVisible();
 });
 
-test('T21 expiry presets and clearing the date', async ({ page }) => {
+test('T21 expiry date can be set and cleared (no month shortcuts)', async ({ page }) => {
   await setup(page);
   await page.getByTestId('fab-add').click();
   const s = sheet(page, 'קופון חדש');
-  // next to the amount there's room for 3 / 6 / 12 months
-  await s.getByRole('button', { name: 'שנה', exact: true }).click();
-  const d = new Date();
-  d.setMonth(d.getMonth() + 12);
-  const shown = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
-  await expect(s.getByText(shown)).toBeVisible();
+  await expect(s.getByRole('button', { name: 'שנה', exact: true })).toHaveCount(0);
+  await expect(s.getByRole('button', { name: 'חודש', exact: true })).toHaveCount(0);
+  await s.locator('#expiry').fill('2031-04-01');
+  await expect(s.getByText('01/04/2031')).toBeVisible();
   await s.getByRole('button', { name: 'נקה תאריך' }).click();
   await expect(s.getByText('ללא תוקף')).toBeVisible();
-  // without an amount the expiry has the whole row, so "month" shows too
-  await chooseType(s, 'אחר');
-  await expect(s.getByRole('button', { name: 'חודש', exact: true })).toBeVisible();
 });
 
 test('T22 store suggestions reuse stores already entered', async ({ page }) => {
@@ -231,10 +226,10 @@ test('T59 the coupon type is a drop-down beside the name: pick, outside tap and 
   const [t, n] = [await type.boundingBox(), await s.getByLabel('שם הקופון').boundingBox()];
   expect(Math.abs(t.y + t.height / 2 - (n.y + n.height / 2))).toBeLessThan(3);
   expect(t.x).toBeLessThan(n.x);
-  // code and digital / physical share a row, the format on the left
-  const [c, fm] = [await s.locator('#code').boundingBox(), await s.getByRole('radiogroup', { name: 'דיגיטלי או פיזי' }).boundingBox()];
-  expect(Math.abs(c.y + c.height / 2 - (fm.y + fm.height / 2))).toBeLessThan(3);
-  expect(fm.x).toBeLessThan(c.x);
+  // the code has the whole row; digital / physical moved under "more details"
+  const c = await s.locator('#code').boundingBox();
+  expect(c.width).toBeGreaterThan(n.width);
+  await expect(s.getByRole('radiogroup', { name: 'דיגיטלי או פיזי' })).toHaveCount(0);
 
   await type.click();
   const menu = s.getByRole('listbox', { name: 'סוג הקופון' });

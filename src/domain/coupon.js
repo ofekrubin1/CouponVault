@@ -1,6 +1,7 @@
 // Coupon rules: expiry, value, ordering and redemption math. Pure functions (unit-tested).
 import { differenceInCalendarDays, parseISO } from 'date-fns';
 import { formatDate, money, round2 } from './format';
+import { LEGACY_CATEGORIES } from './constants';
 
 /** Days until expiry (0 = today, negative = expired). null if no expiry. */
 export function daysLeft(coupon, now = new Date()) {
@@ -8,10 +9,13 @@ export function daysLeft(coupon, now = new Date()) {
   return differenceInCalendarDays(parseISO(coupon.expiry), now);
 }
 
-/** A coupon's categories. Older coupons stored a single `category`; newer ones a `categories` list. */
+/**
+ * A coupon's categories. Older coupons stored a single `category`; newer ones a `categories` list. Old built-in
+ * categories read as the one they were folded into (e.g. מסעדות → אוכל).
+ */
 export function couponCategories(c) {
-  if (Array.isArray(c?.categories) && c.categories.length) return c.categories;
-  return c?.category ? [c.category] : [];
+  const raw = Array.isArray(c?.categories) && c.categories.length ? c.categories : c?.category ? [c.category] : [];
+  return [...new Set(raw.map((x) => LEGACY_CATEGORIES[x] || x))];
 }
 
 export const isUsed = (c) => c.status === 'used';

@@ -5,7 +5,7 @@ const many = (n) =>
   Array.from({ length: n }, (_, i) => ({
     title: `קופון ${i + 1}`,
     store: ['שופרסל', 'זארה', 'Buyme', 'איקאה'][i % 4],
-    category: ['סופרמרקט', 'אופנה', 'פנאי ובילוי', 'בית'][i % 4],
+    category: ['סופרמרקט', 'ביגוד', 'כללי', 'סופרמרקט'][i % 4],
     type: i % 3 === 0 ? 'percent' : 'money',
     value: i % 3 === 0 ? 10 + i : 50 * (i + 1),
     expiry: i % 5 === 0 ? null : isoIn(5 + i * 7),

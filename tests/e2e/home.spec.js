@@ -37,30 +37,30 @@ test('T29 list is sorted by expiry, coupons without expiry last', async ({ page 
 test('T30 category chips filter the list and show what is left to spend', async ({ page }) => {
   const { familyId } = await setup(page);
   await seed(page, familyId, [
-    { title: 'פיצה', store: 'דומינוס', category: 'מסעדות', type: 'money', value: 100 },
-    { title: 'סושי', store: 'ג׳פניקה', category: 'מסעדות', type: 'money', value: 150, balance: 90 },
+    { title: 'פיצה', store: 'דומינוס', category: 'אוכל', type: 'money', value: 100 },
+    { title: 'סושי', store: 'ג׳פניקה', category: 'אוכל', type: 'money', value: 150, balance: 90 },
     { title: 'סופר', store: 'רמי לוי', category: 'סופרמרקט', type: 'money', value: 300 },
-    { title: 'חולצה', store: 'קסטרו', category: 'אופנה', type: 'percent', value: 20 },
+    { title: 'חולצה', store: 'קסטרו', category: 'ביגוד', type: 'percent', value: 20 },
   ]);
   await expect(page.getByTestId('summary-balance')).toHaveText('₪490');
   const list = page.getByTestId('coupon-list').getByTestId('coupon-ticket');
   const chip = (group, value) => page.locator(`[data-testid="filter-chip"][data-group="${group}"][data-value="${value}"]`);
   await page.getByTestId('filter-button').click();
   await expect(page.getByTestId('filter-panel')).toBeVisible();
-  await chip('cat', 'מסעדות').click();
+  await chip('cat', 'אוכל').click();
   await expect(list).toHaveCount(2);
   await expect(page.getByTestId('filtered-balance')).toContainText('₪190');
   // several tags at once
-  await chip('cat', 'אופנה').click();
+  await chip('cat', 'ביגוד').click();
   await expect(list).toHaveCount(3);
   await expect(page.getByTestId('filter-button')).toHaveAttribute('data-active', 'true');
-  await chip('cat', 'מסעדות').click();
+  await chip('cat', 'אוכל').click();
   await expect(list).toHaveCount(1);
   await expect(list.first()).toHaveAttribute('data-title', 'חולצה');
   // closing the panel keeps the filter, shown as a removable chip
   await page.getByRole('button', { name: 'הצג 1 קופונים' }).click();
   await expect(page.getByTestId('filter-panel')).toBeHidden();
-  await page.getByTestId('active-filters').getByRole('button', { name: 'הסר סינון אופנה' }).click();
+  await page.getByTestId('active-filters').getByRole('button', { name: 'הסר סינון ביגוד' }).click();
   await expect(list).toHaveCount(4);
   await expect(page.getByTestId('filter-button')).not.toHaveAttribute('data-active', 'true');
 });

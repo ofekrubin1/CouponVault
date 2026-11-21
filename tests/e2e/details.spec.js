@@ -9,22 +9,27 @@ test('T47 a coupon can have several categories and is found under each', async (
   const s = sheet(page, 'קופון חדש');
   await s.getByLabel('שם הקופון').fill('ערב בחוץ');
   await s.getByLabel('איפה אפשר לממש').fill('Buyme');
-  await s.getByRole('button', { name: 'מסעדות', exact: true }).click();
-  await s.getByRole('button', { name: 'פנאי ובילוי', exact: true }).click();
-  await expect(s.getByRole('button', { name: 'מסעדות', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  // just the four built-in categories
+  await expect(s.getByRole('button', { name: /^(כללי|אוכל|סופרמרקט|ביגוד)$/ })).toHaveCount(4);
+  await expect(s.getByRole('button', { name: 'מסעדות', exact: true })).toHaveCount(0);
+  await s.getByRole('button', { name: 'אוכל', exact: true }).click();
+  await s.getByRole('button', { name: 'כללי', exact: true }).click();
+  await expect(s.getByRole('button', { name: 'אוכל', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await chooseType(s, 'אחר');
   await s.getByLabel('קוד / מספר שובר').fill('C-100');
   await s.getByTestId('coupon-save').click();
-  await expect(ticket(page, 'ערב בחוץ')).toContainText('מסעדות · פנאי ובילוי');
-  await expect.poll(async () => (await serverCoupons(page, familyId))[0]?.categories).toEqual(['מסעדות', 'פנאי ובילוי']);
+  await expect(ticket(page, 'ערב בחוץ')).toContainText('אוכל · כללי');
+  await expect.poll(async () => (await serverCoupons(page, familyId))[0]?.categories).toEqual(['אוכל', 'כללי']);
 
+  // a coupon saved with an old built-in category shows under the new one
   await seed(page, familyId, [{ title: 'רק אופנה', store: 'x', type: 'other', category: 'אופנה' }]);
+  await expect(ticket(page, 'רק אופנה')).toContainText('ביגוד');
   const list = page.getByTestId('coupon-list').getByTestId('coupon-ticket');
   await page.getByTestId('filter-button').click();
-  await page.locator('[data-testid="filter-chip"][data-group="cat"][data-value="פנאי ובילוי"]').click();
+  await page.locator('[data-testid="filter-chip"][data-group="cat"][data-value="כללי"]').click();
   await expect(list).toHaveCount(1);
   await page.getByTestId('filter-panel').getByRole('button', { name: 'נקה' }).click();
-  await page.locator('[data-testid="filter-chip"][data-group="cat"][data-value="מסעדות"]').click();
+  await page.locator('[data-testid="filter-chip"][data-group="cat"][data-value="אוכל"]').click();
   await expect(list).toHaveCount(1);
   await expect(list.first()).toHaveAttribute('data-title', 'ערב בחוץ');
 
@@ -34,7 +39,7 @@ test('T47 a coupon can have several categories and is found under each', async (
 
 test('T48 a link in "where to use" and in the notes is tappable; the list shows just the site name', async ({ page }) => {
   const { familyId } = await setup(page);
-  await seed(page, familyId, [{ title: 'All-inZone', store: HTZONE, type: 'money', value: 345, category: 'אחר', notes: 'תקנון: https://example.com/terms' }]);
+  await seed(page, familyId, [{ title: 'All-inZone', store: HTZONE, type: 'money', value: 345, category: 'כללי', notes: 'תקנון: https://example.com/terms' }]);
   await expect(ticket(page, 'All-inZone')).toContainText('htzone.co.il');
   await expect(ticket(page, 'All-inZone')).not.toContainText('voucher-zone');
   const s = await openTicket(page, 'All-inZone');
@@ -44,7 +49,7 @@ test('T48 a link in "where to use" and in the notes is tappable; the list shows 
   await expect(s.getByRole('link', { name: 'https://example.com/terms' })).toHaveAttribute('href', 'https://example.com/terms');
   // the card's header shows the site name and the category in full (nothing cut off)
   await expect(s.getByTestId('coupon-hero')).toContainText('htzone.co.il');
-  await expect(s.getByTestId('hero-categories')).toHaveText('אחר');
+  await expect(s.getByTestId('hero-categories')).toHaveText('כללי');
 });
 
 /** Fire a one-finger vertical drag on an element (real touch events, like a phone). */
@@ -123,9 +128,12 @@ test('T52 a coupon can be marked physical (digital by default) and changed back'
   const { familyId } = await setup(page);
   await page.getByTestId('fab-add').click();
   const s = sheet(page, 'קופון חדש');
-  await expect(s.getByRole('radio', { name: 'דיגיטלי' })).toHaveAttribute('aria-checked', 'true');
   await s.getByLabel('שם הקופון').fill('תו מודפס');
   await s.getByLabel('איפה אפשר לממש').fill('שופרסל');
+  // the format lives under "more details"
+  await expect(s.getByRole('radiogroup', { name: 'דיגיטלי או פיזי' })).toHaveCount(0);
+  await s.getByRole('button', { name: 'פרטים נוספים' }).click();
+  await expect(s.getByRole('radio', { name: 'דיגיטלי' })).toHaveAttribute('aria-checked', 'true');
   await s.getByRole('radio', { name: 'פיזי' }).click();
   await chooseType(s, 'אחר');
   await s.getByLabel('קוד / מספר שובר').fill('C-100');

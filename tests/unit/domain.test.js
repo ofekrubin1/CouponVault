@@ -7,7 +7,7 @@ import { isUrl, urlHost, displayStore, splitLinks } from '@/domain/links';
 import { brandDomain, brandDomainOf, logoUrl, logoSources, isOwnLogo, isWideLogo, BRAND_LIST, searchBrands } from '@/domain/brands';
 import { EMPTY_FILTERS, filterCoupons, categoryCounts, typeCounts, toggleIn, activeFilterCount, voucherBalance } from '@/domain/filters';
 import { normalizeInviteCode, familyCategories, membersOf, pickCurrentFamily, inviteMessage, alertDaysFor } from '@/domain/family';
-import { NO_CATEGORY } from '@/domain/constants';
+import { NO_CATEGORY, DEFAULT_CATEGORIES } from '@/domain/constants';
 
 const NOW = new Date(2026, 10, 15, 12, 0);
 const voucher = (fields = {}) => ({ id: 'v', status: 'active', type: 'money', value: 200, balance: 200, usages: [], ...fields });
@@ -83,7 +83,12 @@ describe('coupon form', () => {
     expect(data).toEqual({ title: 'שובר', store: 'זארה', categories: ['אופנה', 'בית', 'דלק'], category: 'אופנה', type: 'money', format: 'digital', value: 200, expiry: null, code: 'Z-1', cvv: '', source: '', notes: '' });
   });
   it('no duplicate categories', () => expect(couponFromForm({ ...valid, categories: ['בית'], addingCategory: true, newCategory: 'בית' }).categories).toEqual(['בית']));
-  it('an old coupon with a single category opens with it selected', () => expect(formFromCoupon({ title: 'x', category: 'אופנה' }).categories).toEqual(['אופנה']));
+  it('old built-in categories read as the new four', () => {
+    expect(couponCategories({ categories: ['מסעדות', 'אוכל', 'טיפוח', 'דלק'] })).toEqual(['אוכל', 'כללי', 'דלק']);
+    expect(couponCategories({ category: 'אופנה' })).toEqual(['ביגוד']);
+    expect(DEFAULT_CATEGORIES).toEqual(['כללי', 'אוכל', 'סופרמרקט', 'ביגוד']);
+  });
+  it('an old coupon with a single category opens with it selected', () => expect(formFromCoupon({ title: 'x', category: 'ביגוד' }).categories).toEqual(['ביגוד']));
   it('editing recalculates the balance from the new value', () => {
     const existing = voucher({ usages: [{ amount: 50 }], balance: 150 });
     expect(couponFromForm({ ...formFromCoupon(existing), title: 'x', store: 'y', value: '300' }, existing).balance).toBe(250);
@@ -100,14 +105,14 @@ describe('coupon form', () => {
 
 describe('filters', () => {
   const list = [
-    { id: 1, title: 'פיצה', store: 'דומינוס', category: 'מסעדות', type: 'money', value: 100, balance: 100, status: 'active' },
-    { id: 2, title: 'סושי', store: 'ג׳פניקה', category: 'מסעדות', type: 'money', value: 150, balance: 90, status: 'active', expiry: '2026-11-18' },
-    { id: 3, title: 'חולצה', store: 'קסטרו', category: 'אופנה', type: 'percent', value: 20, status: 'active', code: 'CAS20' },
+    { id: 1, title: 'פיצה', store: 'דומינוס', category: 'אוכל', type: 'money', value: 100, balance: 100, status: 'active' },
+    { id: 2, title: 'סושי', store: 'ג׳פניקה', category: 'אוכל', type: 'money', value: 150, balance: 90, status: 'active', expiry: '2026-11-18' },
+    { id: 3, title: 'חולצה', store: 'קסטרו', category: 'ביגוד', type: 'percent', value: 20, status: 'active', code: 'CAS20' },
     { id: 4, title: 'קפה', store: 'ארומה', type: 'other', status: 'active' },
   ];
   const run = (opts) => filterCoupons(list, { alertDays: 14, now: NOW, ...opts }).map((c) => c.id);
   it('no filters = everything', () => expect(run({})).toEqual([1, 2, 3, 4]));
-  it('several categories at once', () => expect(run({ filters: { ...EMPTY_FILTERS, cats: new Set(['מסעדות', 'אופנה']) } })).toEqual([1, 2, 3]));
+  it('several categories at once', () => expect(run({ filters: { ...EMPTY_FILTERS, cats: new Set(['אוכל', 'ביגוד']) } })).toEqual([1, 2, 3]));
   it('"no category" is a filter of its own', () => expect(run({ filters: { ...EMPTY_FILTERS, cats: new Set([NO_CATEGORY]) } })).toEqual([4]));
   it('by type + expiring soon', () => expect(run({ filters: { ...EMPTY_FILTERS, types: new Set(['money']), soon: true } })).toEqual([2]));
   it('search looks at title, store and code (case-insensitive)', () => {
@@ -115,13 +120,13 @@ describe('filters', () => {
     expect(run({ query: 'cas20' })).toEqual([3]);
   });
   it('counts per category (most first) and per type', () => {
-    expect(categoryCounts(list)).toEqual([['מסעדות', 2], ['אופנה', 1], [NO_CATEGORY, 1]]);
+    expect(categoryCounts(list)).toEqual([['אוכל', 2], ['ביגוד', 1], [NO_CATEGORY, 1]]);
     expect(typeCounts(list)).toEqual({ money: 2, percent: 1, other: 1 });
   });
   it('toggle + active count + voucher balance', () => {
-    const f = { ...EMPTY_FILTERS, cats: toggleIn(new Set(), 'אופנה'), soon: true };
+    const f = { ...EMPTY_FILTERS, cats: toggleIn(new Set(), 'ביגוד'), soon: true };
     expect(activeFilterCount(f)).toBe(2);
-    expect(toggleIn(f.cats, 'אופנה').size).toBe(0);
+    expect(toggleIn(f.cats, 'ביגוד').size).toBe(0);
     expect(voucherBalance(list)).toBe(190);
   });
 });
@@ -133,11 +138,11 @@ describe('categories', () => {
     expect(couponCategories({})).toEqual([]);
   });
   it('a coupon with several categories matches each of them', () => {
-    const list = [{ id: 1, categories: ['מסעדות', 'פנאי ובילוי'], type: 'other', status: 'active' }, { id: 2, category: 'אופנה', type: 'other', status: 'active' }];
+    const list = [{ id: 1, categories: ['אוכל', 'כללי'], type: 'other', status: 'active' }, { id: 2, category: 'ביגוד', type: 'other', status: 'active' }];
     const ids = (cats) => filterCoupons(list, { filters: { ...EMPTY_FILTERS, cats: new Set(cats) } }).map((c) => c.id);
-    expect(ids(['פנאי ובילוי'])).toEqual([1]);
-    expect(ids(['אופנה', 'מסעדות'])).toEqual([1, 2]);
-    expect(categoryCounts(list)).toEqual([['אופנה', 1], ['מסעדות', 1], ['פנאי ובילוי', 1]]);
+    expect(ids(['כללי'])).toEqual([1]);
+    expect(ids(['ביגוד', 'אוכל'])).toEqual([1, 2]);
+    expect(categoryCounts(list)).toEqual([['אוכל', 1], ['ביגוד', 1], ['כללי', 1]]);
   });
 });
 
@@ -211,7 +216,7 @@ describe('families', () => {
   it('invite codes are cleaned while typing', () => expect(normalizeInviteCode('ab-c1 23x')).toBe('ABC123'));
   it('categories = defaults + custom, no duplicates', () => {
     const cats = familyCategories({ customCategories: ['דלק', 'מסעדות'] });
-    expect(cats.filter((c) => c === 'מסעדות')).toHaveLength(1);
+    expect(cats.filter((c) => c === 'אוכל')).toHaveLength(1); // the old מסעדות folded into אוכל
     expect(cats.at(-1)).toBe('דלק');
   });
   it('members carry their info (with a fallback name)', () =>
