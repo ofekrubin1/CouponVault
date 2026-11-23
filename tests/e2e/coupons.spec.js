@@ -226,10 +226,13 @@ test('T59 the coupon type is a drop-down beside the name: pick, outside tap and 
   const [t, n] = [await type.boundingBox(), await s.getByLabel('שם הקופון').boundingBox()];
   expect(Math.abs(t.y + t.height / 2 - (n.y + n.height / 2))).toBeLessThan(3);
   expect(t.x).toBeLessThan(n.x);
-  // the code has the whole row; digital / physical moved under "more details"
+  // the code has the whole row; digital / physical is small, on the left of the verification-code switch
   const c = await s.locator('#code').boundingBox();
   expect(c.width).toBeGreaterThan(n.width);
-  await expect(s.getByRole('radiogroup', { name: 'דיגיטלי או פיזי' })).toHaveCount(0);
+  const [fm, sw] = [await s.getByRole('radiogroup', { name: 'דיגיטלי או פיזי' }).boundingBox(), await s.getByRole('switch', { name: 'קוד אימות' }).boundingBox()];
+  expect(Math.abs(fm.y + fm.height / 2 - (sw.y + sw.height / 2))).toBeLessThan(4);
+  expect(fm.x + fm.width).toBeLessThan(sw.x);
+  expect(fm.width).toBeLessThan(140);
 
   await type.click();
   const menu = s.getByRole('listbox', { name: 'סוג הקופון' });

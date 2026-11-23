@@ -107,6 +107,8 @@ export const BRANDS = [
   ['powergift.co.il', 'פאוור גיפט', 'פאואר גיפט', 'power gift', 'powergift', 'power card'],
   ['shemo.co.il', 'מיקי שמו', 'miki shemo', 'shemo', '=שמו'],
   ['365mashbir.co.il', 'המשביר לצרכן', 'המשביר', 'משביר', 'mashbir'],
+  ['foodappeal.co.il', 'פוד אפיל', 'food appeal', 'foodappeal', 'food apeal'], // its site moved to foodappeal-online.com
+  ['minene.net', 'מיננה', 'minene'],
   // hotels & cinema
   ['isrotel.com', 'ישרוטל', 'isrotel'],
   ['fattal.co.il', 'פתאל', 'fattal'],
@@ -181,4 +183,6 @@ export const OWN_LOGOS = {
   'renuar.co.il': { src: '/brands/renuar.png', wide: true },
   'shemo.co.il': { src: '/brands/shemo.png', wide: true },
   '365mashbir.co.il': { src: '/brands/mashbir.png', wide: true },
+  'foodappeal.co.il': '/brands/foodappeal.png',
+  'minene.net': { src: '/brands/minene.png', wide: true },
 };

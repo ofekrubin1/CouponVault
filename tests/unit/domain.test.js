@@ -190,6 +190,15 @@ describe('brand logos', () => {
     expect(brandDomainOf('מועדון נאמנות')).toBeNull();
     expect(brandDomainOf('שמונה מאות')).toBeNull(); // contains "שמו"
   });
+  it('Food Appeal and Minene, with the logos stored in the app', () => {
+    for (const t of ['Food Appeal', 'food apeal', 'פוד אפיל', 'שובר פוד אפיל 200']) expect([t, brandDomainOf(t)]).toEqual([t, 'foodappeal.co.il']);
+    for (const t of ['מיננה', 'Minene', 'MINENE בגדי תינוקות']) expect([t, brandDomainOf(t)]).toEqual([t, 'minene.net']);
+    expect(logoSources('foodappeal.co.il')[0]).toBe('/brands/foodappeal.png');
+    expect(logoSources('minene.net')[0]).toBe('/brands/minene.png');
+    expect(isWideLogo('minene.net')).toBe(true);
+    expect(isWideLogo('foodappeal.co.il')).toBe(false);
+    expect(BRAND_LIST.find((b) => b.domain === 'minene.net').name).toBe('מיננה');
+  });
   it('short names only match as a whole word', () => {
     expect(brandDomainOf('פנאי ובילוי')).toBeNull(); // contains "ילו"
     expect(brandDomainOf('מתנה לחבר')).toBeNull(); // contains "חבר"

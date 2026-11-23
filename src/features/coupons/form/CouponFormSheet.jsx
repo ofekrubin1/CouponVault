@@ -15,7 +15,7 @@ export function CouponFormSheet({ coupon, family, user, categories, stores, onCl
   const actions = useCouponActions(family, user);
   const body = useRef(null);
   const { f, set, errors, hasErrors, unsaved, pickable, toggleCategory, submit } = useCouponForm(coupon, categories, body);
-  const [more, setMore] = useState(!!(coupon?.source || coupon?.notes || coupon?.format === 'physical'));
+  const [more, setMore] = useState(!!(coupon?.source || coupon?.notes));
 
   const save = () =>
     submit((data) => {
@@ -104,7 +104,15 @@ export function CouponFormSheet({ coupon, family, user, categories, stores, onCl
           />
         </Field>
 
-        <CvvField on={f.hasCvv} onToggle={set('hasCvv', 'cvv')} value={f.cvv} onChange={set('cvv')} error={errors.cvv} />
+        {/* the verification-code switch, with digital / physical in small on its left */}
+        <CvvField
+          on={f.hasCvv}
+          onToggle={set('hasCvv', 'cvv')}
+          value={f.cvv}
+          onChange={set('cvv')}
+          error={errors.cvv}
+          aside={<Segmented size="sm" name="דיגיטלי או פיזי" value={f.format} onChange={set('format')} options={COUPON_FORMATS} className="w-[7.5rem] shrink-0" />}
+        />
 
         <button type="button" className="flex items-center gap-1 text-[13px] font-medium text-gold-dark" onClick={() => setMore((m) => !m)} aria-expanded={more}>
           פרטים נוספים
@@ -112,9 +120,6 @@ export function CouponFormSheet({ coupon, family, user, categories, stores, onCl
         </button>
         {more && (
           <div className="space-y-3">
-            <Field id="format" label="השובר הוא">
-              <Segmented name="דיגיטלי או פיזי" value={f.format} onChange={set('format')} options={COUPON_FORMATS} />
-            </Field>
             <Field id="source" label="התקבל מ-">
               <Input id="source" icon={Gift} value={f.source} onChange={set('source')} placeholder="למשל: מתנה מהעבודה, יום הולדת" />
             </Field>

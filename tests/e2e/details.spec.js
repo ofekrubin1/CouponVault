@@ -129,9 +129,7 @@ test('T52 a coupon can be marked physical (digital by default) and changed back'
   const s = sheet(page, 'קופון חדש');
   await s.getByLabel('שם הקופון').fill('תו מודפס');
   await s.getByLabel('איפה אפשר לממש').fill('שופרסל');
-  // the format lives under "more details"
-  await expect(s.getByRole('radiogroup', { name: 'דיגיטלי או פיזי' })).toHaveCount(0);
-  await s.getByRole('button', { name: 'פרטים נוספים' }).click();
+  // the format is right in the form (beside the verification code), no need to open "more details"
   await expect(s.getByRole('radio', { name: 'דיגיטלי' })).toHaveAttribute('aria-checked', 'true');
   await s.getByRole('radio', { name: 'פיזי' }).click();
   await chooseType(s, 'אחר');
