@@ -1,8 +1,8 @@
 // Logic that used to live inside components: redemption math, form validation, filters, families.
 import { describe, it, expect } from 'vitest';
-import { planRedemption, rebalance, summarize, isExpiringSoon, balanceOf } from '@/domain/coupon';
+import { planRedemption, rebalance, summarize, isExpiringSoon, balanceOf, balanceAfterUndo } from '@/domain/coupon';
 import { validateCouponForm, couponFromForm, formFromCoupon, firstInvalidField } from '@/domain/couponForm';
-import { couponCategories } from '@/domain/coupon';
+import { couponCategories, resolveCategories, withFamilyCategories } from '@/domain/coupon';
 import { isUrl, urlHost, displayStore, splitLinks } from '@/domain/links';
 import { brandDomain, brandDomainOf, logoUrl, logoSources, isOwnLogo, isWideLogo, BRAND_LIST, searchBrands } from '@/domain/brands';
 import { searchCoupons, groupByCategory } from '@/domain/homeList';
@@ -31,6 +31,9 @@ describe('balances', () => {
   // restored from the archive: the history stays, the balance is back to the full value
   it('editing a restored voucher keeps its balance', () => expect(rebalance(200, voucher({ balance: 200, usages: [{ amount: 200 }] }))).toBe(200));
   it('a coupon that becomes a voucher starts with its full value', () => expect(rebalance(120, { type: 'product', value: null, balance: null })).toBe(120));
+  it('undoing the last use puts its amount back', () => expect(balanceAfterUndo(voucher({ balance: 120, usages: [{ amount: 80 }] }))).toBe(200));
+  // restored from the archive (balance already full) and then "undo last": never more than the face value
+  it('undo never lifts the balance above the face value', () => expect(balanceAfterUndo(voucher({ balance: 200, usages: [{ amount: 200 }] }))).toBe(200));
   it('balanceOf falls back to the face value', () => expect(balanceOf(voucher({ balance: undefined }))).toBe(200));
   it('summary counts and sums', () => {
     const active = [voucher({ balance: 120, expiry: '2026-11-20' }), voucher({ id: 'b', balance: 80 }), { id: 'p', status: 'active', type: 'percent', value: 10 }];
@@ -85,11 +88,31 @@ describe('coupon form', () => {
     const data = couponFromForm({ ...valid, title: ' שובר ', categories: ['אופנה', 'בית'], addingCategory: true, newCategory: ' דלק ', expiry: '' });
     expect(data).toEqual({ title: 'שובר', store: 'זארה', categories: ['אופנה', 'בית', 'דלק'], category: 'אופנה', type: 'money', format: 'digital', value: 200, expiry: null, code: 'Z-1', cvv: '', source: '', notes: '' });
   });
+  it('"ללא קטגוריה" cannot be a new category (it is the group of coupons without one)', () =>
+    expect(validateCouponForm({ ...valid, addingCategory: true, newCategory: ' ללא קטגוריה ' }).category).toBe('השם הזה שמור. בחרו שם אחר'));
   it('no duplicate categories', () => expect(couponFromForm({ ...valid, categories: ['בית'], addingCategory: true, newCategory: 'בית' }).categories).toEqual(['בית']));
-  it('old built-in categories read as the new four', () => {
-    expect(couponCategories({ categories: ['מסעדות', 'אוכל', 'טיפוח', 'דלק'] })).toEqual(['אוכל', 'כללי', 'דלק']);
-    expect(couponCategories({ category: 'אופנה' })).toEqual(['ביגוד']);
+  it('old built-in categories the family no longer has read as the new four', () => {
+    const cats = familyCategories({ customCategories: ['דלק'] });
+    expect(resolveCategories({ categories: ['מסעדות', 'אוכל', 'טיפוח', 'דלק'] }, cats)).toEqual(['אוכל', 'כללי', 'דלק']);
+    expect(resolveCategories({ category: 'אופנה' }, cats)).toEqual(['ביגוד']);
     expect(DEFAULT_CATEGORIES).toEqual(['כללי', 'אוכל', 'סופרמרקט', 'ביגוד']);
+  });
+  // the bug: a family made its own "בית" and its coupons showed up under כללי
+  it('a category of the family is never renamed, even when it has an old built-in name', () => {
+    const cats = familyCategories({ customCategories: ['בית', 'טיפוח'] });
+    expect(cats).toContain('בית');
+    expect(resolveCategories({ categories: ['בית'] }, cats)).toEqual(['בית']);
+    expect(resolveCategories({ categories: ['טיפוח', 'מסעדות'] }, cats)).toEqual(['טיפוח', 'אוכל']);
+  });
+  it('reading a coupon never renames its categories by itself', () => {
+    expect(couponCategories({ categories: ['בית'] })).toEqual(['בית']);
+    expect(couponCategories({ category: 'מסעדות' })).toEqual(['מסעדות']);
+  });
+  it('coupons are resolved once, with the categories of the family', () => {
+    const cats = familyCategories({ customCategories: ['בית'] });
+    const [a, b] = withFamilyCategories([{ id: 1, categories: ['בית'] }, { id: 2, category: 'מסעדות' }], cats);
+    expect(a).toMatchObject({ categories: ['בית'], category: 'בית' });
+    expect(b).toMatchObject({ categories: ['אוכל'], category: 'אוכל' });
   });
   it('an old coupon with a single category opens with it selected', () => expect(formFromCoupon({ title: 'x', category: 'ביגוד' }).categories).toEqual(['ביגוד']));
   it('editing recalculates the balance from the new value', () => {
@@ -199,6 +222,20 @@ describe('brand logos', () => {
     expect(isWideLogo('foodappeal.co.il')).toBe(false);
     expect(BRAND_LIST.find((b) => b.domain === 'minene.net').name).toBe('מיננה');
   });
+  it('Naaman and Flying Tiger, with wide logos stored in the app', () => {
+    for (const t of ['נעמן', 'Naaman', 'נעמן פורצלן']) expect([t, brandDomainOf(t)]).toEqual([t, 'naamanp.co.il']);
+    for (const t of ['Flying Tiger', 'פליינג טייגר', 'flying tiger copenhagen']) expect([t, brandDomainOf(t)]).toEqual([t, 'flyingtiger.com']);
+    expect(brandDomainOf('מאפה נאמן')).toBe('neeman.co.il'); // not Naaman
+    for (const d of ['naamanp.co.il', 'flyingtiger.com']) {
+      expect(logoSources(d)[0]).toMatch(/^\/brands\//);
+      expect(isWideLogo(d)).toBe(true);
+    }
+  });
+  it('Azrieli malls, with its wide logo', () => {
+    for (const t of ['עזריאלי', 'קניוני עזריאלי', 'גיפט קארד עזריאלי', 'Azrieli']) expect([t, brandDomainOf(t)]).toEqual([t, 'azrielimalls.co.il']);
+    expect(logoSources('azrielimalls.co.il')[0]).toBe('/brands/azrieli.png');
+    expect(isWideLogo('azrielimalls.co.il')).toBe(true);
+  });
   it('short names only match as a whole word', () => {
     expect(brandDomainOf('פנאי ובילוי')).toBeNull(); // contains "ילו"
     expect(brandDomainOf('מתנה לחבר')).toBeNull(); // contains "חבר"
@@ -224,9 +261,8 @@ describe('families', () => {
   });
   it('invite codes are cleaned while typing', () => expect(normalizeInviteCode('ab-c1 23x')).toBe('ABC123'));
   it('categories = defaults + custom, no duplicates', () => {
-    const cats = familyCategories({ customCategories: ['דלק', 'מסעדות'] });
-    expect(cats.filter((c) => c === 'אוכל')).toHaveLength(1); // the old מסעדות folded into אוכל
-    expect(cats.at(-1)).toBe('דלק');
+    const cats = familyCategories({ customCategories: ['דלק', 'אוכל', 'בית'] });
+    expect(cats).toEqual(['כללי', 'אוכל', 'סופרמרקט', 'ביגוד', 'דלק', 'בית']); // the family's own names, as typed
   });
   it('members carry their info (with a fallback name)', () =>
     expect(membersOf({ members: ['a', 'b'], memberInfo: { a: { name: 'דנה' } } })).toEqual([{ uid: 'a', name: 'דנה' }, { uid: 'b', name: 'משתמש' }]));

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Tag, X, Plus } from 'lucide-react';
 import { Card, Input, cx, useConfirm, useToast } from '@/ui';
 import { addCategory, removeCategory } from '@/data';
-import { DEFAULT_CATEGORIES } from '@/domain/constants';
+import { DEFAULT_CATEGORIES, NO_CATEGORY } from '@/domain/constants';
 import { familyCategories } from '@/domain/family';
 import { CategoryIcon } from '@/features/coupons';
 import { SectionTitle } from '../SectionTitle';
@@ -17,6 +17,10 @@ export function CategoriesSection({ family }) {
   const add = () => {
     const c = name.trim();
     if (!c) return;
+    if (c === NO_CATEGORY) {
+      toast('השם הזה שמור. בחרו שם אחר', 'error');
+      return;
+    }
     if (familyCategories(family).includes(c) || custom.includes(c)) {
       toast('הקטגוריה כבר קיימת', 'error');
       return;

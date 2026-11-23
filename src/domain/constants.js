@@ -4,7 +4,7 @@ export const DEFAULT_CATEGORIES = ['כללי', 'אוכל', 'סופרמרקט', '
 /** The catch-all category: its group comes last on the home screen. */
 export const GENERAL_CATEGORY = 'כללי';
 
-/** Built-in categories of earlier versions → the one they now belong to (applied when reading a coupon). */
+/** Built-in categories of earlier versions → the one they now belong to (only when the family has no such category). */
 export const LEGACY_CATEGORIES = {
   מסעדות: 'אוכל',
   אופנה: 'ביגוד',

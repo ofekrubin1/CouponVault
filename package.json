@@ -9,6 +9,7 @@
     "emulators": "firebase emulators:start --only auth,firestore --project demo-couponvault",
     "build": "vite build",
     "preview": "vite preview",
+    "local": "node scripts/local.mjs",
     "test": "npm run test:unit && npm run test:rules && npm run test:e2e",
     "test:unit": "vitest run tests/unit",
     "test:rules": "firebase emulators:exec --only firestore --project demo-couponvault \"vitest run tests/rules\"",

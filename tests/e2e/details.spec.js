@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { chooseType, openTicket, seed, serverCoupons, setup, sheet, ticket } from './helpers';
+import { chooseType, openTicket, seed, serverCoupons, setup, sheet, tab, ticket } from './helpers';
 
 const HTZONE = 'http://www.htzone.co.il/voucher-zone/10';
 
@@ -245,4 +245,75 @@ test('T62 a family category gets the same chip width as the built-in ones (even 
   const add = await s.getByRole('button', { name: 'חדשה' }).boundingBox();
   expect(Math.abs(own.width - builtIn.width)).toBeLessThan(2);
   expect(Math.abs(add.width - builtIn.width)).toBeLessThan(2);
+});
+
+// Regression: a family made its own category "בית" (an old built-in name) and its coupons moved to "כללי".
+test('T64 a family category with an old built-in name ("בית") keeps its coupons, after reload and edit', async ({ page }) => {
+  const { familyId } = await setup(page);
+  const group = (c) => page.locator(`[data-testid="coupon-group"][data-category="${c}"]`);
+  // create "בית" from the form, with a first coupon
+  await page.getByTestId('fab-add').click();
+  let s = sheet(page, 'קופון חדש');
+  await s.getByLabel('שם הקופון').fill('כלי מטבח');
+  await s.getByLabel('איפה אפשר לממש').fill('נעמן');
+  await s.getByRole('button', { name: 'חדשה' }).click();
+  await s.getByPlaceholder('שם הקטגוריה החדשה').fill('בית');
+  await s.locator('#value').fill('100');
+  await s.getByLabel('קוד / מספר שובר').fill('H-1');
+  await s.getByTestId('coupon-save').click();
+  await expect(s).toBeHidden();
+  // a second one, picking "בית" from the list
+  await page.getByTestId('fab-add').click();
+  s = sheet(page, 'קופון חדש');
+  await s.getByLabel('שם הקופון').fill('מצעים');
+  await s.getByLabel('איפה אפשר לממש').fill('ורדינון');
+  await s.getByRole('button', { name: 'בית', exact: true }).click();
+  await s.locator('#value').fill('200');
+  await s.getByLabel('קוד / מספר שובר').fill('H-2');
+  await s.getByTestId('coupon-save').click();
+  await expect(s).toBeHidden();
+
+  await expect(group('בית').getByTestId('coupon-ticket')).toHaveCount(2);
+  await expect(group('כללי')).toHaveCount(0);
+  await expect.poll(async () => (await serverCoupons(page, familyId)).map((c) => c.categories[0]).sort()).toEqual(['בית', 'בית']);
+
+  // still there after a reload (fresh from the server)
+  await page.reload();
+  await expect(group('בית').getByTestId('coupon-ticket')).toHaveCount(2);
+  await expect(group('כללי')).toHaveCount(0);
+
+  // editing a coupon keeps "בית" ticked and saves it as "בית"
+  const d = await openTicket(page, 'מצעים');
+  await expect(d.getByTestId('hero-categories')).toHaveText('בית');
+  await d.getByRole('button', { name: 'עריכה' }).click();
+  const f = sheet(page, 'עריכת קופון');
+  await expect(f.getByRole('button', { name: 'בית', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await f.getByLabel('שם הקופון').fill('מצעים זוגיים');
+  await f.getByTestId('coupon-save').click();
+  await expect(f).toBeHidden();
+  await expect(group('בית').getByTestId('coupon-ticket')).toHaveCount(2);
+  await expect.poll(async () => (await serverCoupons(page, familyId)).find((c) => c.title === 'מצעים זוגיים')?.categories).toEqual(['בית']);
+
+  // and it's listed in settings as the family's own
+  await tab(page, 'הגדרות');
+  await expect(page.getByRole('button', { name: 'הסר בית' })).toBeVisible();
+});
+
+// A coupon saved before the four categories still shows under the new one, unless the family has that name.
+test('T65 an old built-in category the family does not have shows under its new one', async ({ page }) => {
+  const { familyId } = await setup(page);
+  await seed(page, familyId, [
+    { title: 'ישן מסעדה', store: 'x', type: 'other', category: 'מסעדות' },
+    { title: 'ישן בית', store: 'y', type: 'other', category: 'בית' },
+  ]);
+  const group = (c) => page.locator(`[data-testid="coupon-group"][data-category="${c}"]`);
+  await expect(group('אוכל')).toContainText('ישן מסעדה');
+  await expect(group('כללי')).toContainText('ישן בית');
+  // once the family has its own "בית", that coupon belongs there
+  await tab(page, 'הגדרות');
+  await page.getByLabel('קטגוריה חדשה').fill('בית');
+  await page.getByRole('button', { name: 'הוסף' }).click();
+  await tab(page, 'קופונים');
+  await expect(group('בית')).toContainText('ישן בית');
+  await expect(group('כללי')).toHaveCount(0);
 });

@@ -1,11 +1,19 @@
 // Sign-in / sign-out. Screens use these instead of calling Firebase Auth directly.
-import { onAuthStateChanged, signInWithPopup, signInWithRedirect, signOut as fbSignOut } from 'firebase/auth';
-import { auth, googleProvider } from './firebase';
+import { GoogleAuthProvider, onAuthStateChanged, signInWithCredential, signInWithPopup, signInWithRedirect, signOut as fbSignOut } from 'firebase/auth';
+import { auth, googleProvider, LOCAL } from './firebase';
+
+/** The fictional user of the local test environment (the same one scripts/seed-local.mjs puts in the families). */
+export const LOCAL_TEST_USER = { sub: 'local-test-user', email: 'test@couponvault.local', name: 'משתמש בדיקה' };
 
 export const watchAuth = (cb) => onAuthStateChanged(auth, cb);
 
 /** Google sign-in. Resolves false when the user closed the popup; throws on real errors. */
 export async function signInWithGoogle() {
+  if (LOCAL) {
+    // Test environment: no Google, straight in as the test user (the Auth emulator accepts an unsigned token).
+    await signInWithCredential(auth, GoogleAuthProvider.credential(JSON.stringify({ ...LOCAL_TEST_USER, email_verified: true })));
+    return true;
+  }
   try {
     await signInWithPopup(auth, googleProvider);
     return true;

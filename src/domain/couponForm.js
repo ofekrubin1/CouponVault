@@ -1,6 +1,6 @@
 // The coupon form's model: initial values, validation and conversion to a stored coupon. Pure functions.
 import { couponCategories, isPhysical, rebalance } from './coupon';
-import { hasValue } from './constants';
+import { hasValue, NO_CATEGORY } from './constants';
 
 /** Field order, so the form can jump to the first invalid one. */
 export const FIELD_ORDER = ['title', 'store', 'category', 'value', 'code', 'cvv'];
@@ -31,6 +31,7 @@ export function validateCouponForm(f) {
   if (!f.title.trim()) e.title = 'חסר שם לקופון';
   if (!f.store.trim()) e.store = 'חסר איפה אפשר לממש';
   if (f.addingCategory && !f.newCategory.trim()) e.category = 'חסר שם לקטגוריה החדשה';
+  if (f.addingCategory && f.newCategory.trim() === NO_CATEGORY) e.category = 'השם הזה שמור. בחרו שם אחר';
   const v = f.value === '' ? null : Number(f.value);
   if (f.type === 'money' && !(v > 0)) e.value = 'בשובר כספי צריך סכום. שובר למוצר? בחרו "מוצר"';
   if (f.type === 'percent' && v != null && !(v > 0 && v <= 100)) e.value = 'אחוז בין 1 ל-100';

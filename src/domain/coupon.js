@@ -9,14 +9,26 @@ export function daysLeft(coupon, now = new Date()) {
   return differenceInCalendarDays(parseISO(coupon.expiry), now);
 }
 
-/**
- * A coupon's categories. Older coupons stored a single `category`; newer ones a `categories` list. Old built-in
- * categories read as the one they were folded into (e.g. מסעדות → אוכל).
- */
+/** A coupon's categories as stored. Older coupons stored a single `category`; newer ones a `categories` list. */
 export function couponCategories(c) {
-  const raw = Array.isArray(c?.categories) && c.categories.length ? c.categories : c?.category ? [c.category] : [];
-  return [...new Set(raw.map((x) => LEGACY_CATEGORIES[x] || x))];
+  return Array.isArray(c?.categories) && c.categories.length ? c.categories : c?.category ? [c.category] : [];
 }
+
+/**
+ * The coupon's categories in terms of the family's: an old built-in category (from before there were four)
+ * that the family doesn't have reads as the one it was folded into (e.g. מסעדות → אוכל). A name the family
+ * has (built-in or its own, like a "בית" it created) is kept exactly as it is.
+ */
+export function resolveCategories(c, familyCats) {
+  return [...new Set(couponCategories(c).map((x) => (familyCats.includes(x) ? x : LEGACY_CATEGORIES[x] || x)))];
+}
+
+/** Coupons as loaded, with their categories resolved once for the family (every screen then shows the same). */
+export const withFamilyCategories = (coupons, familyCats) =>
+  coupons.map((c) => {
+    const categories = resolveCategories(c, familyCats);
+    return { ...c, categories, category: categories[0] || '' };
+  });
 
 export const isUsed = (c) => c.status === 'used';
 /** Physical voucher (paper / card). Coupons saved before this option existed are digital. */
@@ -59,6 +71,12 @@ export function sortByExpiry(a, b) {
   if (!a.expiry) return 1;
   if (!b.expiry) return -1;
   return a.expiry.localeCompare(b.expiry) || (a.title || '').localeCompare(b.title || '', 'he');
+}
+
+/** Balance after undoing the most recent use: its amount comes back, but never above the face value. */
+export function balanceAfterUndo(c) {
+  const last = (c.usages || []).at(-1);
+  return Math.min(c.value ?? 0, round2(balanceOf(c) + (Number(last?.amount) || 0)));
 }
 
 export const usedAmount = (c) => (c.usages || []).reduce((s, u) => s + (Number(u.amount) || 0), 0);

@@ -4,12 +4,19 @@ import {
   initializeFirestore, persistentLocalCache, persistentMultipleTabManager, connectFirestoreEmulator,
 } from 'firebase/firestore';
 
-// `vite --mode emulator` (used by the automated tests) talks to the local Firebase emulators instead of production.
-export const EMULATOR = import.meta.env.MODE === 'emulator';
+// Two modes never touch production; they talk to Firebase emulators on this computer:
+// - `vite --mode emulator`: the automated tests (ports 9099 / 8080, wiped every run).
+// - `vite --mode sandbox`: the test environment for trying changes by hand (`npm run local`, ports 9095 / 8085,
+//   fictional users and coupons).
+export const LOCAL = import.meta.env.MODE === 'sandbox'; // Vite doesn't allow a mode called "local"
+export const EMULATOR = import.meta.env.MODE === 'emulator' || LOCAL;
+const DEMO_PROJECT = LOCAL ? 'demo-couponvault-local' : 'demo-couponvault';
+// The emulators run on the computer that serves the page, so a phone on the same Wi-Fi reaches them too.
+const emulatorHost = () => (window.location.hostname === 'localhost' ? '127.0.0.1' : window.location.hostname);
 
 // Web config is public by design; access is enforced by firestore.rules.
 const firebaseConfig = EMULATOR
-  ? { apiKey: 'demo-key', authDomain: 'demo-couponvault.firebaseapp.com', projectId: 'demo-couponvault', appId: 'demo-app' }
+  ? { apiKey: 'demo-key', authDomain: `${DEMO_PROJECT}.firebaseapp.com`, projectId: DEMO_PROJECT, appId: 'demo-app' }
   : {
       apiKey: 'AIzaSyArBUgDvKBwKUSycK6SjKk2NLJ3pvhEv0U',
       authDomain: 'couponvault-2026.firebaseapp.com',
@@ -31,6 +38,7 @@ export const db = initializeFirestore(app, {
 });
 
 if (EMULATOR) {
-  connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
-  connectFirestoreEmulator(db, '127.0.0.1', 8080);
+  const host = emulatorHost();
+  connectAuthEmulator(auth, `http://${host}:${LOCAL ? 9095 : 9099}`, { disableWarnings: true });
+  connectFirestoreEmulator(db, host, LOCAL ? 8085 : 8080);
 }

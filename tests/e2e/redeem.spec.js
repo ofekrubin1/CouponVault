@@ -81,3 +81,16 @@ test('T27 undo the last usage puts the money back', async ({ page }) => {
   await expect(again.getByTestId('usage-history')).toHaveCount(0);
   await expect.poll(async () => (await serverCoupons(page, familyId))[0]).toMatchObject({ balance: 200, usages: [] });
 });
+
+test('T66 restoring a used voucher and then undoing its last use never goes above the face value', async ({ page }) => {
+  const { familyId } = await setup(page);
+  const at = new Date().toISOString();
+  await seed(page, familyId, [{ title: 'שובר שנגמר', store: 'Buyme', code: 'B-1', type: 'money', value: 120, balance: 0, status: 'used', usedAt: at, usedByName: 'דנה', usages: [{ at, by: 'x', byName: 'דנה', amount: 120 }] }]);
+  await tab(page, 'ארכיון');
+  const s = await openTicket(page, 'שובר שנגמר');
+  await s.getByRole('button', { name: 'החזר לפעילים' }).click();
+  await expect(s.getByTestId('hero-balance')).toHaveText('₪120');
+  await s.getByTestId('usage-history').getByRole('button', { name: 'בטל אחרון' }).click();
+  await expect(s.getByTestId('hero-balance')).toHaveText('₪120');
+  await expect.poll(async () => (await serverCoupons(page, familyId))[0]?.balance).toBe(120);
+});

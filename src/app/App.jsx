@@ -2,12 +2,26 @@ import { useEffect, useState } from 'react';
 import { ConfirmProvider, Spinner, ToastProvider, useToast } from '@/ui';
 import { setErrorReporter } from '@/data';
 import { watchAuth } from '@/services/auth';
+import { LOCAL } from '@/services/firebase';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { OnboardingPage, useFamilies } from '@/features/families';
 import { AppShell } from './AppShell';
 import { clearJoinLink, readJoinLink } from './joinLink';
 
 const joinCodeAtStart = readJoinLink();
+
+/** Always on screen in the local test environment, so it's never mistaken for the real app. */
+function SandboxBadge() {
+  return (
+    <div
+      className="pointer-events-none fixed left-3 z-[80] rounded-full bg-[#E2A04A] px-2.5 py-0.5 text-[11px] font-semibold text-white shadow"
+      style={{ top: 'calc(env(safe-area-inset-top) + 6px)' }}
+      data-testid="sandbox-badge"
+    >
+      סביבת בדיקה · נתונים פיקטיביים
+    </div>
+  );
+}
 
 /** Background writes run without waiting; when the server rejects one, tell the user. */
 function ErrorReporter() {
@@ -21,6 +35,7 @@ export default function App() {
     <ToastProvider>
       <ConfirmProvider>
         <ErrorReporter />
+        {LOCAL && <SandboxBadge />}
         <div className="liquid-bg" aria-hidden />
         <AuthGate />
       </ConfirmProvider>

@@ -2,7 +2,7 @@
 // up) come from domain/coupon.js; this file only turns them into Firestore writes.
 import { arrayRemove, arrayUnion, collection, deleteDoc, doc, increment, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/services/firebase';
-import { isMoney, planRedemption } from '@/domain/coupon';
+import { balanceAfterUndo, isMoney, planRedemption } from '@/domain/coupon';
 import { background, docsOf, liveSnapshot } from './sync';
 
 const couponsCol = (familyId) => collection(db, 'families', familyId, 'coupons');
@@ -51,7 +51,7 @@ export function redeemCoupon(familyId, user, coupon, amount = null) {
   return plan;
 }
 
-/** Undo the most recent usage: puts the amount back and reactivates the coupon. */
+/** Undo the most recent usage: puts the amount back (up to the face value) and reactivates the coupon. */
 export function undoLastUsage(familyId, coupon) {
   const usages = coupon.usages || [];
   const last = usages[usages.length - 1];
@@ -61,7 +61,7 @@ export function undoLastUsage(familyId, coupon) {
     status: 'active',
     usedAt: null,
     usedByName: null,
-    ...(isMoney(coupon) ? { balance: increment(Number(last.amount) || 0) } : {}),
+    ...(isMoney(coupon) ? { balance: balanceAfterUndo(coupon) } : {}),
   });
 }
 

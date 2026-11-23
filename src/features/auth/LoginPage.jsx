@@ -19,6 +19,13 @@ const POINTS = [
   { icon: ShieldCheck, title: 'פרטי ובטוח', text: 'רק בני המשפחה רואים את הקופונים' },
 ];
 
+/** What to tell the user when sign-in fails (the real reason, not always "check the internet"). */
+function signInError(e) {
+  if (e?.code === 'auth/network-request-failed') return 'לא הצלחנו להתחבר. כדאי לבדוק את החיבור לאינטרנט ולנסות שוב';
+  if (e?.code === 'auth/unauthorized-domain') return 'אי אפשר להתחבר מהכתובת הזו. פתחו את האפליקציה מהכתובת הרגילה שלה';
+  return `ההתחברות נכשלה. נסו שוב${e?.code ? ` (${e.code})` : ''}`;
+}
+
 /** Sign-in screen: light liquid background, centred, one clear action. */
 export function LoginPage() {
   const [err, setErr] = useState('');
@@ -31,7 +38,7 @@ export function LoginPage() {
       if (!(await signInWithGoogle())) setBusy(false);
     } catch (e) {
       console.error(e);
-      setErr('לא הצלחנו להתחבר. כדאי לבדוק את החיבור לאינטרנט ולנסות שוב');
+      setErr(signInError(e));
       setBusy(false);
     }
   }

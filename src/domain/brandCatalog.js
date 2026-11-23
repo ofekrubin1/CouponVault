@@ -109,6 +109,9 @@ export const BRANDS = [
   ['365mashbir.co.il', 'המשביר לצרכן', 'המשביר', 'משביר', 'mashbir'],
   ['foodappeal.co.il', 'פוד אפיל', 'food appeal', 'foodappeal', 'food apeal'], // its site moved to foodappeal-online.com
   ['minene.net', 'מיננה', 'minene'],
+  ['naamanp.co.il', 'נעמן', 'נעמן פורצלן', 'naaman'],
+  ['flyingtiger.com', 'פליינג טייגר', 'flying tiger', 'flyingtiger'],
+  ['azrielimalls.co.il', 'קניוני עזריאלי', 'עזריאלי', 'azrieli'], // the malls' gift card; azrieli.com itself closed in 2023
   // hotels & cinema
   ['isrotel.com', 'ישרוטל', 'isrotel'],
   ['fattal.co.il', 'פתאל', 'fattal'],
@@ -185,4 +188,7 @@ export const OWN_LOGOS = {
   '365mashbir.co.il': { src: '/brands/mashbir.png', wide: true },
   'foodappeal.co.il': '/brands/foodappeal.png',
   'minene.net': { src: '/brands/minene.png', wide: true },
+  'naamanp.co.il': { src: '/brands/naaman.png', wide: true },
+  'flyingtiger.com': { src: '/brands/flyingtiger.png', wide: true },
+  'azrielimalls.co.il': { src: '/brands/azrieli.png', wide: true },
 };

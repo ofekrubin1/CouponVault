@@ -1,5 +1,5 @@
 // Families and invites. Pure functions.
-import { DEFAULT_ALERT_DAYS, DEFAULT_CATEGORIES, INVITE_CODE_LENGTH, LEGACY_CATEGORIES } from './constants';
+import { DEFAULT_ALERT_DAYS, DEFAULT_CATEGORIES, INVITE_CODE_LENGTH } from './constants';
 
 const INVITE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O/1/I
 
@@ -17,8 +17,8 @@ export const joinLink = (origin, code) => `${origin}/?join=${code}`;
 export const inviteMessage = (family, origin) =>
   `מצטרפים למשפחת הקופונים "${family.name}" ב-CouponVault.\nקוד הזמנה: ${family.inviteCode}\n${joinLink(origin, family.inviteCode)}`;
 
-/** Default + the family's own categories, without duplicates (an old built-in name reads as its new category). */
-export const familyCategories = (family) => [...new Set([...DEFAULT_CATEGORIES, ...(family.customCategories || []).map((c) => LEGACY_CATEGORIES[c] || c)])];
+/** Default + the family's own categories (exactly as the family named them), without duplicates. */
+export const familyCategories = (family) => [...new Set([...DEFAULT_CATEGORIES, ...(family.customCategories || [])])];
 
 export const membersOf = (family) => family.members.map((uid) => ({ uid, ...(family.memberInfo?.[uid] || { name: 'משתמש' }) }));
 

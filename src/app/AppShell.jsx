@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Spinner } from '@/ui';
 import { familyCategories } from '@/domain/family';
+import { withFamilyCategories } from '@/domain/coupon';
 import { CouponDetailSheet, CouponFormSheet, useCouponActions, useCoupons } from '@/features/coupons';
 import { FamilyActions } from '@/features/families';
 import { HomePage } from '@/features/home/HomePage';
@@ -13,13 +14,14 @@ import { useCouponSheet } from './useCouponSheet';
 
 /** The signed-in app for one family: header, current tab, bottom bar, + button and coupon sheets. */
 export function AppShell({ user, family, families, ready, joinCode, alertDays }) {
-  const coupons = useCoupons(family.id, ready);
+  const categories = useMemo(() => familyCategories(family), [family]);
+  const loaded = useCoupons(family.id, ready);
+  const coupons = useMemo(() => loaded && withFamilyCategories(loaded, categories), [loaded, categories]);
   const actions = useCouponActions(family, user);
   const sheets = useCouponSheet(coupons);
   const [tab, setTab] = useState('home');
   const [pendingJoin, setPendingJoin] = useState(joinCode && !families.some((f) => f.inviteCode === joinCode) ? joinCode : '');
 
-  const categories = useMemo(() => familyCategories(family), [family]);
   const stores = useMemo(() => [...new Set((coupons || []).map((c) => c.store).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'he')), [coupons]);
 
   const go = (t) => {
