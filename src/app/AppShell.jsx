@@ -34,7 +34,7 @@ export function AppShell({ user, family, families, ready, joinCode, alertDays })
 
   let page;
   if (coupons === null) page = <Spinner className="flex justify-center py-20" />;
-  else if (tab === 'home') page = <HomePage coupons={coupons} alertDays={alertDays} onOpen={sheets.openDetail} onAdd={sheets.openNew} onDelete={actions.remove} />;
+  else if (tab === 'home') page = <HomePage coupons={coupons} categories={categories} alertDays={alertDays} onOpen={sheets.openDetail} onAdd={sheets.openNew} onDelete={actions.remove} />;
   else if (tab === 'archive') page = <ArchivePage coupons={coupons} alertDays={alertDays} onOpen={sheets.openDetail} />;
   else page = <SettingsPage key={family.id} user={user} family={family} families={families} alertDays={alertDays} />;
 

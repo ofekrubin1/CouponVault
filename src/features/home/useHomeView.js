@@ -1,23 +1,17 @@
 import { useMemo } from 'react';
-import { isActive, isExpiringSoon, sortByExpiry, summarize } from '@/domain/coupon';
-import { activeFilterCount, categoryCounts, filterCoupons, typeCounts, voucherBalance } from '@/domain/filters';
+import { isActive, sortByExpiry, summarize } from '@/domain/coupon';
+import { groupByCategory, searchCoupons } from '@/domain/homeList';
 
-/** Everything the home screen shows, derived from the coupons + current search/filters. */
-export function useHomeView(coupons, alertDays, query, filters) {
+/** Everything the home screen shows: the summary line and the active coupons grouped by category. */
+export function useHomeView(coupons, alertDays, categories, query) {
   const active = useMemo(() => coupons.filter((c) => isActive(c)).sort(sortByExpiry), [coupons]);
   return useMemo(() => {
-    const shown = filterCoupons(active, { query, filters, alertDays });
-    const filterCount = activeFilterCount(filters);
+    const shown = searchCoupons(active, query);
     return {
       active,
       summary: summarize(active, alertDays),
-      expiring: active.filter((c) => isExpiringSoon(c, alertDays)),
-      cats: categoryCounts(active),
-      typeCounts: typeCounts(active),
-      shown,
-      shownBalance: voucherBalance(shown),
-      filterCount,
-      filtering: filterCount > 0 || !!query.trim(),
+      groups: groupByCategory(shown, categories),
+      shownCount: shown.length,
     };
-  }, [active, alertDays, query, filters]);
+  }, [active, alertDays, categories, query]);
 }

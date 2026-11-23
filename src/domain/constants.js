@@ -1,6 +1,8 @@
 // Domain constants: plain data only (no React, no icons). Display details live in features/coupons/categoryStyle.js.
 
 export const DEFAULT_CATEGORIES = ['כללי', 'אוכל', 'סופרמרקט', 'ביגוד'];
+/** The catch-all category: its group comes last on the home screen. */
+export const GENERAL_CATEGORY = 'כללי';
 
 /** Built-in categories of earlier versions → the one they now belong to (applied when reading a coupon). */
 export const LEGACY_CATEGORIES = {

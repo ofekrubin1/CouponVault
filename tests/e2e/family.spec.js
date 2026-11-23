@@ -160,9 +160,11 @@ test('T55 the expiry alert is personal: changing it does not change it for the r
   await tab(page, 'הגדרות');
   await page.getByRole('radio', { name: '30 ימים' }).click();
   await tab(page, 'קופונים');
-  await expect(page.getByTestId('expiring-card').getByTestId('expiring-item')).toHaveCount(1);
+  await expect(page.getByTestId('summary-expiring')).toHaveText('1 פגים בקרוב');
+  await expect(page.getByTestId('row-expiry')).toHaveAttribute('data-urgency', 'gold');
   await b.page.waitForTimeout(1500);
-  await expect(b.page.getByTestId('expiring-card')).toHaveCount(0);
+  await expect(b.page.getByTestId('summary-expiring')).toHaveCount(0);
+  await expect(b.page.getByTestId('row-expiry')).not.toHaveAttribute('data-urgency', /./);
   await tab(b.page, 'הגדרות');
   await expect(b.page.getByRole('radio', { name: '14 ימים' })).toHaveAttribute('aria-checked', 'true');
   await b.ctx.close();

@@ -81,21 +81,3 @@ export function Switch({ checked, onChange, label }) {
 }
 
 /** Toggleable chip; selected = light accent tint with a check mark. */
-export function ToggleChip({ on, onClick, children, className, ...rest }) {
-  return (
-    <button
-      type="button"
-      aria-pressed={on}
-      onClick={onClick}
-      className={cx(
-        'flex items-center gap-1.5 whitespace-nowrap rounded-[12px] border px-3 py-2 text-[13px] font-medium transition-colors',
-        on ? 'chip-on' : 'border-white/80 bg-white/55 text-mute',
-        className,
-      )}
-      {...rest}
-    >
-      {on && <Check className="h-3.5 w-3.5 text-accent" strokeWidth={2.2} />}
-      {children}
-    </button>
-  );
-}

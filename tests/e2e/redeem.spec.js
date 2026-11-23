@@ -16,7 +16,7 @@ test('T23 partial use: 200 → use 80 → back on the home screen with 120 left;
   await expect(page.getByRole('status')).toContainText('נותרו ₪120');
   await expect(page.getByRole('navigation', { name: 'ניווט' }).getByRole('button', { name: 'קופונים' })).toHaveAttribute('aria-current', 'page');
   await expect(ticket(page, 'שובר 200')).toContainText('₪120');
-  await expect(ticket(page, 'שובר 200')).toContainText('מתוך ₪200');
+  await expect(ticket(page, 'שובר 200')).not.toContainText('₪200'); // the row shows what's left
   const again = await openTicket(page, 'שובר 200');
   await expect(again.getByTestId('hero-balance')).toHaveText('₪120');
   await expect(again.getByTestId('usage-history')).toContainText('-₪80');

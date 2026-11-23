@@ -4,7 +4,7 @@ import { isoIn, seed, setup, ticket } from './helpers';
 
 test.skip(!process.env.SCREENS, 'screenshots only on demand');
 
-test('swipe + filter screens', async ({ page }) => {
+test('swipe + home screens', async ({ page }) => {
   const { familyId } = await setup(page, { family: 'משפחת רובין' });
   await seed(page, familyId, [
     { title: 'Buyme מתנה', store: 'Buyme', category: 'פנאי ובילוי', type: 'money', value: 400, balance: 250, expiry: isoIn(40) },
@@ -23,8 +23,6 @@ test('swipe + filter screens', async ({ page }) => {
   await page.screenshot({ path: 'test-results/screens/20-swipe.png' });
   await t.click();
   await page.evaluate(() => window.scrollTo(0, 0));
-  await page.getByTestId('filter-button').click();
-  await page.locator('[data-testid="filter-chip"][data-group="cat"][data-value="אופנה"]').click();
   await page.waitForTimeout(300);
-  await page.screenshot({ path: 'test-results/screens/21-filter.png', fullPage: true });
+  await page.screenshot({ path: 'test-results/screens/21-home.png', fullPage: true });
 });

@@ -5,7 +5,7 @@ import { displayStore } from '@/domain/links';
 import { BrandLogo } from '../BrandLogo';
 import { ExpiryBadge } from '../ExpiryBadge';
 import { TicketStub } from './TicketStub';
-import { useSwipeToReveal } from './useSwipeToReveal';
+import { useSwipeToReveal } from '../useSwipeToReveal';
 
 const STUB_W = 98;
 const NOTCH = 8;

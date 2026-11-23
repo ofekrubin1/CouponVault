@@ -9,7 +9,7 @@ test('T12 add a money voucher with every field', async ({ page }) => {
   await expect(t).toBeVisible();
   await expect(t).toContainText('₪200');
   await expect(t).toContainText('Buyme');
-  await expect(t).toContainText('כללי');
+  await expect(page.locator('[data-testid="coupon-group"][data-category="כללי"]')).toContainText('Buyme 200'); // listed under its category
   await expect.poll(async () => (await serverCoupons(page, familyId)).length).toBe(1);
   const [saved] = await serverCoupons(page, familyId);
   expect(saved).toMatchObject({ title: 'Buyme 200', store: 'Buyme', type: 'money', value: 200, balance: 200, code: 'BM-7781', status: 'active', expiry: isoIn(90) });
@@ -78,7 +78,7 @@ test('T16 percent and "other" coupons show the right value on the ticket', async
   await addCoupon(page, { title: '20 אחוז', store: 'קסטרו', type: 'percent', value: 20 });
   await addCoupon(page, { title: 'קינוח חינם', store: 'מסעדה', type: 'other' });
   await expect(ticket(page, '20 אחוז')).toContainText('20%');
-  await expect(ticket(page, 'קינוח חינם')).toContainText('קופון');
+  await expect(ticket(page, 'קינוח חינם')).not.toContainText('₪'); // no amount on a plain coupon
 });
 
 test('T17 edit: new title and amount, balance recalculated after a partial use', async ({ page }) => {
@@ -131,7 +131,7 @@ test('T20 a new category added in the form is saved for the family', async ({ pa
   await chooseType(s, 'אחר');
   await s.getByLabel('קוד / מספר שובר').fill('C-100');
   await s.getByTestId('coupon-save').click();
-  await expect(ticket(page, 'תדלוק')).toContainText('דלק');
+  await expect(page.locator('[data-testid="coupon-group"][data-category="דלק"]')).toContainText('תדלוק');
   await tab(page, 'הגדרות');
   await expect(page.getByRole('button', { name: 'הסר דלק' })).toBeVisible();
   // and it's offered next time

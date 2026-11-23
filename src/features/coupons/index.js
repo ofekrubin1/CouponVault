@@ -1,5 +1,6 @@
 // Coupons feature: list item, detail sheet, form sheet, hooks.
 export { CouponTicket } from './ticket/CouponTicket';
+export { CouponRow } from './row/CouponRow';
 export { CouponDetailSheet } from './detail/CouponDetailSheet';
 export { CouponFormSheet } from './form/CouponFormSheet';
 export { CategoryTile, CategoryIcon } from './CategoryTile';

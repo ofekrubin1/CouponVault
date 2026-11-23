@@ -5,7 +5,7 @@ import { validateCouponForm, couponFromForm, formFromCoupon, firstInvalidField }
 import { couponCategories } from '@/domain/coupon';
 import { isUrl, urlHost, displayStore, splitLinks } from '@/domain/links';
 import { brandDomain, brandDomainOf, logoUrl, logoSources, isOwnLogo, isWideLogo, BRAND_LIST, searchBrands } from '@/domain/brands';
-import { EMPTY_FILTERS, filterCoupons, categoryCounts, typeCounts, toggleIn, activeFilterCount, voucherBalance } from '@/domain/filters';
+import { searchCoupons, groupByCategory } from '@/domain/homeList';
 import { normalizeInviteCode, familyCategories, membersOf, pickCurrentFamily, inviteMessage, alertDaysFor } from '@/domain/family';
 import { NO_CATEGORY, DEFAULT_CATEGORIES } from '@/domain/constants';
 
@@ -106,31 +106,35 @@ describe('coupon form', () => {
   });
 });
 
-describe('filters', () => {
+describe('home list', () => {
   const list = [
     { id: 1, title: 'פיצה', store: 'דומינוס', category: 'אוכל', type: 'money', value: 100, balance: 100, status: 'active' },
     { id: 2, title: 'סושי', store: 'ג׳פניקה', category: 'אוכל', type: 'money', value: 150, balance: 90, status: 'active', expiry: '2026-11-18' },
     { id: 3, title: 'חולצה', store: 'קסטרו', category: 'ביגוד', type: 'percent', value: 20, status: 'active', code: 'CAS20' },
     { id: 4, title: 'קפה', store: 'ארומה', type: 'other', status: 'active' },
+    { id: 5, title: 'שובר', store: 'Buyme', categories: ['כללי', 'אוכל'], type: 'money', value: 50, status: 'active' },
+    { id: 6, title: 'דלק', store: 'פז', category: 'רכב', type: 'money', value: 80, status: 'active' },
   ];
-  const run = (opts) => filterCoupons(list, { alertDays: 14, now: NOW, ...opts }).map((c) => c.id);
-  it('no filters = everything', () => expect(run({})).toEqual([1, 2, 3, 4]));
-  it('several categories at once', () => expect(run({ filters: { ...EMPTY_FILTERS, cats: new Set(['אוכל', 'ביגוד']) } })).toEqual([1, 2, 3]));
-  it('"no category" is a filter of its own', () => expect(run({ filters: { ...EMPTY_FILTERS, cats: new Set([NO_CATEGORY]) } })).toEqual([4]));
-  it('by type + expiring soon', () => expect(run({ filters: { ...EMPTY_FILTERS, types: new Set(['money']), soon: true } })).toEqual([2]));
-  it('search looks at title, store and code (case-insensitive)', () => {
-    expect(run({ query: 'דומי' })).toEqual([1]);
-    expect(run({ query: 'cas20' })).toEqual([3]);
+  const ids = (cs) => cs.map((c) => c.id);
+  it('empty search = everything', () => expect(ids(searchCoupons(list, '  '))).toEqual([1, 2, 3, 4, 5, 6]));
+  it('search looks at title, store, code and category (case-insensitive)', () => {
+    expect(ids(searchCoupons(list, 'דומי'))).toEqual([1]);
+    expect(ids(searchCoupons(list, 'cas20'))).toEqual([3]);
+    expect(ids(searchCoupons(list, 'ביגוד'))).toEqual([3]);
   });
-  it('counts per category (most first) and per type', () => {
-    expect(categoryCounts(list)).toEqual([['אוכל', 2], ['ביגוד', 1], [NO_CATEGORY, 1]]);
-    expect(typeCounts(list)).toEqual({ money: 2, percent: 1, other: 1 });
+  it('groups by the first category: the family order, its own categories, then כללי, then no category', () => {
+    const groups = groupByCategory(list, ['כללי', 'אוכל', 'סופרמרקט', 'ביגוד', 'רכב']);
+    expect(groups.map((g) => g.category)).toEqual(['אוכל', 'ביגוד', 'רכב', 'כללי', NO_CATEGORY]);
+    expect(ids(groups[0].items)).toEqual([1, 2]); // the coupon under כללי + אוכל shows once, under כללי
+    expect(ids(groups[3].items)).toEqual([5]);
   });
-  it('toggle + active count + voucher balance', () => {
-    const f = { ...EMPTY_FILTERS, cats: toggleIn(new Set(), 'ביגוד'), soon: true };
-    expect(activeFilterCount(f)).toBe(2);
-    expect(toggleIn(f.cats, 'ביגוד').size).toBe(0);
-    expect(voucherBalance(list)).toBe(190);
+  it('a category the family no longer has still gets its group, before כללי', () => {
+    const groups = groupByCategory(list, ['כללי', 'אוכל', 'סופרמרקט', 'ביגוד']);
+    expect(groups.map((g) => g.category)).toEqual(['אוכל', 'ביגוד', 'רכב', 'כללי', NO_CATEGORY]);
+  });
+  it('keeps the order of the coupons inside a group (already sorted by expiry)', () => {
+    const [food] = groupByCategory([list[1], list[0]], ['אוכל']);
+    expect(ids(food.items)).toEqual([2, 1]);
   });
 });
 
@@ -139,13 +143,6 @@ describe('categories', () => {
     expect(couponCategories({ categories: ['א', 'ב'] })).toEqual(['א', 'ב']);
     expect(couponCategories({ category: 'א' })).toEqual(['א']);
     expect(couponCategories({})).toEqual([]);
-  });
-  it('a coupon with several categories matches each of them', () => {
-    const list = [{ id: 1, categories: ['אוכל', 'כללי'], type: 'other', status: 'active' }, { id: 2, category: 'ביגוד', type: 'other', status: 'active' }];
-    const ids = (cats) => filterCoupons(list, { filters: { ...EMPTY_FILTERS, cats: new Set(cats) } }).map((c) => c.id);
-    expect(ids(['כללי'])).toEqual([1]);
-    expect(ids(['ביגוד', 'אוכל'])).toEqual([1, 2]);
-    expect(categoryCounts(list)).toEqual([['אוכל', 1], ['ביגוד', 1], ['כללי', 1]]);
   });
 });
 

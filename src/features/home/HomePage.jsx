@@ -1,14 +1,9 @@
 import { useState } from 'react';
 import { Ticket, Plus, Sparkles } from 'lucide-react';
 import { Button, EmptyState } from '@/ui';
-import { EMPTY_FILTERS } from '@/domain/filters';
 import { money } from '@/domain/format';
-import { CouponTicket } from '@/features/coupons';
-import { SummaryCard } from './SummaryCard';
-import { ExpiringCard } from './ExpiringCard';
+import { CouponRow, categoryLabel } from '@/features/coupons';
 import { SearchBar } from './SearchBar';
-import { FilterPanel } from './filters/FilterPanel';
-import { ActiveFilters } from './filters/ActiveFilters';
 import { useHomeView } from './useHomeView';
 import { BrandsBoardSheet } from './brands/BrandsBoardSheet';
 import { BRAND_LIST } from '@/domain/brands';
@@ -28,12 +23,34 @@ function BrandsButton({ onClick }) {
   );
 }
 
-export function HomePage({ coupons, alertDays, onOpen, onAdd, onDelete }) {
+/** One line at the top: what's left in vouchers, how many coupons, how many are about to expire. */
+function Summary({ balance, activeCount, expiringCount }) {
+  return (
+    <div className="flex flex-wrap items-baseline gap-x-2 px-1" data-testid="summary-card">
+      <p dir="ltr" className="text-[28px] font-bold leading-none tracking-tight text-navy" data-testid="summary-balance">
+        <span className="mr-0.5 text-[17px] font-semibold text-gold">₪</span>
+        {money(balance).slice(1)}
+      </p>
+      <p className="text-[12.5px] text-mute/70">
+        ב-{activeCount} קופונים
+        {expiringCount > 0 && (
+          <>
+            {' · '}
+            <b className="font-semibold text-danger" data-testid="summary-expiring">
+              {expiringCount} פגים בקרוב
+            </b>
+          </>
+        )}
+      </p>
+    </div>
+  );
+}
+
+/** Home: a short summary, search, and every active coupon in two lines, grouped by category like a notepad. */
+export function HomePage({ coupons, categories, alertDays, onOpen, onAdd, onDelete }) {
   const [query, setQuery] = useState('');
-  const [filters, setFilters] = useState(EMPTY_FILTERS);
-  const [panel, setPanel] = useState(false);
   const [brands, setBrands] = useState(false);
-  const view = useHomeView(coupons, alertDays, query, filters);
+  const view = useHomeView(coupons, alertDays, categories, query);
   const board = brands && <BrandsBoardSheet onClose={() => setBrands(false)} />;
 
   if (view.active.length === 0) {
@@ -58,46 +75,29 @@ export function HomePage({ coupons, alertDays, onOpen, onAdd, onDelete }) {
   }
 
   return (
-    <div className="space-y-4">
-      <SummaryCard {...view.summary} />
-      {view.expiring.length > 0 && <ExpiringCard coupons={view.expiring} alertDays={alertDays} onOpen={onOpen} />}
+    <div className="space-y-3">
+      <Summary {...view.summary} />
+      <SearchBar query={query} onQuery={setQuery} />
 
-      <div className="space-y-3 pt-1">
-        <SearchBar query={query} onQuery={setQuery} filtersOn={view.filterCount > 0} panelOpen={panel} onTogglePanel={() => setPanel((p) => !p)} />
-        {panel ? (
-          <FilterPanel
-            cats={view.cats}
-            typeCounts={view.typeCounts}
-            soonCount={view.expiring.length}
-            filters={filters}
-            onChange={setFilters}
-            resultCount={view.shown.length}
-            onClose={() => setPanel(false)}
-          />
-        ) : (
-          <ActiveFilters filters={filters} onChange={setFilters} />
-        )}
-      </div>
-
-      <div className="px-0.5">
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="section-title">
-            {view.filterCount ? 'תוצאות הסינון' : 'כל הקופונים'} <span className="text-gold-dark">· {view.shown.length}</span>
-          </h2>
-          <BrandsButton onClick={() => setBrands(true)} />
-        </div>
-        {view.filtering && view.shownBalance > 0 && (
-          <p className="mt-1 text-[12px] font-light text-mute/60" data-testid="filtered-balance">
-            יתרה: <b className="font-semibold text-navy">{money(view.shownBalance)}</b>
-          </p>
-        )}
-      </div>
-
-      <div className="space-y-3" data-testid="coupon-list">
-        {view.shown.map((c) => (
-          <CouponTicket key={c.id} coupon={c} alertDays={alertDays} onClick={() => onOpen(c)} onDelete={onDelete} />
+      <div className="overflow-hidden rounded-[18px] bg-white shadow-[0_2px_10px_rgba(10,31,68,0.06)]" data-testid="coupon-list">
+        {view.groups.map(({ category, items }) => (
+          <section key={category} data-testid="coupon-group" data-category={category}>
+            <h2 className="flex items-center justify-between border-t border-navy/[0.05] bg-[#F7F8FB] px-3 pb-1.5 pt-2 text-[11.5px] font-semibold text-navy [section:first-child>&]:border-t-0">
+              {categoryLabel(category)}
+              <span className="font-normal text-mute/50">{items.length}</span>
+            </h2>
+            <div className="divide-y divide-navy/[0.05]">
+              {items.map((c) => (
+                <CouponRow key={c.id} coupon={c} alertDays={alertDays} onClick={() => onOpen(c)} onDelete={onDelete} />
+              ))}
+            </div>
+          </section>
         ))}
-        {view.shown.length === 0 && <p className="py-10 text-center text-sm font-light text-mute/40">לא נמצאו קופונים</p>}
+        {view.shownCount === 0 && <p className="py-10 text-center text-sm font-light text-mute/40">לא נמצאו קופונים</p>}
+      </div>
+
+      <div className="flex justify-center pt-1">
+        <BrandsButton onClick={() => setBrands(true)} />
       </div>
       {board}
     </div>

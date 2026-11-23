@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { isoIn, openTicket, seed, setup, sheet, tab, ticket } from './helpers';
 
-test('T28 "about to expire" lists only coupons inside the alert window, most urgent first', async ({ page }) => {
+test('T28 coupons about to expire are flagged in their row (red within 3 days, amber inside the alert window)', async ({ page }) => {
   const { familyId } = await setup(page);
   await seed(page, familyId, [
     { title: 'עוד יומיים', store: 'a', type: 'other', expiry: isoIn(2) },
@@ -9,16 +9,15 @@ test('T28 "about to expire" lists only coupons inside the alert window, most urg
     { title: 'עוד חודשיים', store: 'c', type: 'other', expiry: isoIn(60) },
     { title: 'בלי תוקף', store: 'd', type: 'other' },
   ]);
-  const card = page.getByTestId('expiring-card');
-  await expect(card).toBeVisible();
-  const items = card.getByTestId('expiring-item');
-  await expect(items).toHaveCount(2);
-  await expect(items.nth(0)).toContainText('עוד יומיים');
-  await expect(items.nth(0)).toContainText('עוד 2 ימים');
-  await expect(items.nth(1)).toContainText('עוד עשרה');
-  await expect(page.getByTestId('summary-card')).toContainText('2');
-  // tapping an item opens the coupon
-  await items.nth(0).click();
+  const expiry = (title) => ticket(page, title).getByTestId('row-expiry');
+  await expect(expiry('עוד יומיים')).toHaveAttribute('data-urgency', 'red');
+  await expect(expiry('עוד יומיים')).toHaveText('עוד 2 ימים');
+  await expect(expiry('עוד עשרה')).toHaveAttribute('data-urgency', 'gold');
+  await expect(expiry('עוד חודשיים')).not.toHaveAttribute('data-urgency', /./);
+  await expect(expiry('בלי תוקף')).toHaveText('ללא תוקף');
+  await expect(page.getByTestId('summary-expiring')).toHaveText('2 פגים בקרוב');
+  // tapping a row opens the coupon
+  await ticket(page, 'עוד יומיים').click();
   await expect(sheet(page, 'עוד יומיים')).toBeVisible();
 });
 
@@ -34,54 +33,33 @@ test('T29 list is sorted by expiry, coupons without expiry last', async ({ page 
   expect(titles).toEqual(['א-שבוע', 'ב-שנה', 'ג-ללא']);
 });
 
-test('T30 category chips filter the list and show what is left to spend', async ({ page }) => {
+test('T30 the home list is grouped by category like a notepad: two lines per coupon, the balance on top', async ({ page }) => {
   const { familyId } = await setup(page);
   await seed(page, familyId, [
-    { title: 'פיצה', store: 'דומינוס', category: 'אוכל', type: 'money', value: 100 },
+    { title: 'פיצה', store: 'דומינוס', category: 'אוכל', type: 'money', value: 100, code: 'DOM-1' },
     { title: 'סושי', store: 'ג׳פניקה', category: 'אוכל', type: 'money', value: 150, balance: 90 },
     { title: 'סופר', store: 'רמי לוי', category: 'סופרמרקט', type: 'money', value: 300 },
     { title: 'חולצה', store: 'קסטרו', category: 'ביגוד', type: 'percent', value: 20 },
+    { title: 'שובר מתנה', store: 'Buyme', category: 'כללי', type: 'product' },
+    { title: 'בלי קטגוריה', store: 'x', type: 'other' },
   ]);
   await expect(page.getByTestId('summary-balance')).toHaveText('₪490');
-  const list = page.getByTestId('coupon-list').getByTestId('coupon-ticket');
-  const chip = (group, value) => page.locator(`[data-testid="filter-chip"][data-group="${group}"][data-value="${value}"]`);
-  await page.getByTestId('filter-button').click();
-  await expect(page.getByTestId('filter-panel')).toBeVisible();
-  await chip('cat', 'אוכל').click();
-  await expect(list).toHaveCount(2);
-  await expect(page.getByTestId('filtered-balance')).toContainText('₪190');
-  // several tags at once
-  await chip('cat', 'ביגוד').click();
-  await expect(list).toHaveCount(3);
-  await expect(page.getByTestId('filter-button')).toHaveAttribute('data-active', 'true');
-  await chip('cat', 'אוכל').click();
-  await expect(list).toHaveCount(1);
-  await expect(list.first()).toHaveAttribute('data-title', 'חולצה');
-  // closing the panel keeps the filter, shown as a removable chip
-  await page.getByRole('button', { name: 'הצג 1 קופונים' }).click();
-  await expect(page.getByTestId('filter-panel')).toBeHidden();
-  await page.getByTestId('active-filters').getByRole('button', { name: 'הסר סינון ביגוד' }).click();
-  await expect(list).toHaveCount(4);
-  await expect(page.getByTestId('filter-button')).not.toHaveAttribute('data-active', 'true');
-});
-
-test('T30b filter by type and "expiring soon", then clear everything', async ({ page }) => {
-  const { familyId } = await setup(page);
-  await seed(page, familyId, [
-    { title: 'שובר דחוף', store: 'a', type: 'money', value: 100, expiry: isoIn(3) },
-    { title: 'שובר רחוק', store: 'b', type: 'money', value: 50, expiry: isoIn(200) },
-    { title: 'הנחה דחופה', store: 'c', type: 'percent', value: 10, expiry: isoIn(5) },
-    { title: 'סתם קופון', store: 'd', type: 'other' },
-  ]);
-  const list = page.getByTestId('coupon-list').getByTestId('coupon-ticket');
-  await page.getByTestId('filter-button').click();
-  await page.locator('[data-testid="filter-chip"][data-group="type"][data-value="money"]').click();
-  await expect(list).toHaveCount(2);
-  await page.getByRole('switch', { name: 'רק פגים בקרוב' }).click();
-  await expect(list).toHaveCount(1);
-  await expect(list.first()).toHaveAttribute('data-title', 'שובר דחוף');
-  await page.getByTestId('filter-panel').getByRole('button', { name: 'נקה' }).click();
-  await expect(list).toHaveCount(4);
+  await expect(page.getByTestId('summary-card')).toContainText('ב-6 קופונים');
+  const groups = page.getByTestId('coupon-group');
+  await expect(groups).toHaveCount(5);
+  expect(await groups.evaluateAll((els) => els.map((e) => e.dataset.category))).toEqual(['אוכל', 'סופרמרקט', 'ביגוד', 'כללי', 'ללא קטגוריה']);
+  await expect(groups.first().locator('h2')).toHaveText('אוכל2');
+  // the row: name and worth, then store · code
+  const pizza = ticket(page, 'פיצה');
+  await expect(pizza).toContainText('₪100');
+  await expect(pizza).toContainText('דומינוס');
+  await expect(pizza).toContainText('DOM-1');
+  await expect(ticket(page, 'סושי')).toContainText('₪90');
+  await expect(ticket(page, 'חולצה')).toContainText('20%');
+  await expect(ticket(page, 'שובר מתנה')).toContainText('מוצר');
+  // compact: a row is at most ~64px tall
+  const box = await pizza.boundingBox();
+  expect(box.height).toBeLessThan(64);
 });
 
 test('T31 search matches title, store and code', async ({ page }) => {
@@ -121,11 +99,12 @@ test('T32 expired coupons leave the home screen and wait in the archive', async 
 test('T33 the alert-days setting widens the "about to expire" window', async ({ page }) => {
   const { familyId } = await setup(page);
   await seed(page, familyId, [{ title: 'בעוד 20 יום', store: 'x', type: 'other', expiry: isoIn(20) }]);
-  await expect(page.getByTestId('expiring-card')).toHaveCount(0);
+  await expect(page.getByTestId('summary-expiring')).toHaveCount(0);
   await tab(page, 'הגדרות');
   await page.getByRole('radio', { name: '30 ימים' }).click();
   await tab(page, 'קופונים');
-  await expect(page.getByTestId('expiring-card').getByTestId('expiring-item')).toHaveCount(1);
+  await expect(page.getByTestId('summary-expiring')).toHaveText('1 פגים בקרוב');
+  await expect(ticket(page, 'בעוד 20 יום').getByTestId('row-expiry')).toHaveAttribute('data-urgency', 'gold');
 });
 
 test('T56 the "brands with a logo" board shows every supported chain, searchable, and closes with back', async ({ page }) => {

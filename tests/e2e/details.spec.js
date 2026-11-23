@@ -18,20 +18,19 @@ test('T47 a coupon can have several categories and is found under each', async (
   await chooseType(s, 'אחר');
   await s.getByLabel('קוד / מספר שובר').fill('C-100');
   await s.getByTestId('coupon-save').click();
-  await expect(ticket(page, 'ערב בחוץ')).toContainText('אוכל · כללי');
+  await expect(page.locator('[data-testid="coupon-group"][data-category="אוכל"]')).toContainText('ערב בחוץ'); // its first category
   await expect.poll(async () => (await serverCoupons(page, familyId))[0]?.categories).toEqual(['אוכל', 'כללי']);
 
   // a coupon saved with an old built-in category shows under the new one
   await seed(page, familyId, [{ title: 'רק אופנה', store: 'x', type: 'other', category: 'אופנה' }]);
-  await expect(ticket(page, 'רק אופנה')).toContainText('ביגוד');
+  // on the home screen each coupon shows once, under its first category; search finds it by any of them
+  await expect(page.locator('[data-testid="coupon-group"][data-category="אוכל"]').getByTestId('coupon-ticket')).toHaveCount(1);
+  await expect(page.locator('[data-testid="coupon-group"][data-category="ביגוד"]')).toContainText('רק אופנה');
+  await page.getByRole('searchbox', { name: 'חיפוש' }).fill('כללי');
   const list = page.getByTestId('coupon-list').getByTestId('coupon-ticket');
-  await page.getByTestId('filter-button').click();
-  await page.locator('[data-testid="filter-chip"][data-group="cat"][data-value="כללי"]').click();
-  await expect(list).toHaveCount(1);
-  await page.getByTestId('filter-panel').getByRole('button', { name: 'נקה' }).click();
-  await page.locator('[data-testid="filter-chip"][data-group="cat"][data-value="אוכל"]').click();
   await expect(list).toHaveCount(1);
   await expect(list.first()).toHaveAttribute('data-title', 'ערב בחוץ');
+  await page.getByRole('button', { name: 'נקה חיפוש' }).click();
 
   const d = await openTicket(page, 'ערב בחוץ');
   await expect(d.getByTestId('hero-categories').locator('span')).toHaveCount(2);
