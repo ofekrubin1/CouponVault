@@ -27,9 +27,9 @@ function Value({ coupon }) {
       <>
         <p className="text-[11px] font-light tracking-[0.06em] text-white/50">{isUsed(coupon) ? 'נוצל במלואו' : 'יתרה לניצול'}</p>
         <p dir="ltr" className="text-right text-[40px] font-semibold leading-none tracking-tight" data-testid="hero-balance">
-          {money(coupon.balance ?? coupon.value)}
+          {money(balanceOf(coupon))}
         </p>
-        {coupon.balance !== coupon.value && <p className="mt-1 text-xs font-light text-white/50">מתוך {money(coupon.value)}</p>}
+        {balanceOf(coupon) !== coupon.value && <p className="mt-1 text-xs font-light text-white/50">מתוך {money(coupon.value)}</p>}
         <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/15">
           <div className="h-full rounded-full bg-gradient-to-l from-gold to-[#E6CB8B] transition-all duration-500" style={{ width: `${pct}%` }} />
         </div>

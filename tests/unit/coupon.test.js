@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { daysLeft, isExpired, isActive, expiryLabel, urgency, valueLabel, sortByExpiry, usedAmount } from '@/domain/coupon';
-import { money, presetDate, formatDate, round2, firstName } from '@/domain/format';
+import { daysLeft, isExpired, isActive, expiryLabel, urgency, sortByExpiry, usedAmount } from '@/domain/coupon';
+import { money, formatDate, round2, firstName } from '@/domain/format';
 import { makeInviteCode } from '@/domain/family';
 
 const NOW = new Date(2026, 10, 15, 12, 0); // 15/11/2026 noon
@@ -54,12 +54,6 @@ describe('values', () => {
     expect(money(1250.5)).toBe('₪1,250.5');
     expect(money(null)).toBe('₪0');
   });
-  it('valueLabel per type', () => {
-    expect(valueLabel(c({ type: 'money', value: 200, balance: 200 }))).toBe('₪200');
-    expect(valueLabel(c({ type: 'money', value: 200, balance: 120 }))).toBe('נותר ₪120 מתוך ₪200');
-    expect(valueLabel(c({ type: 'percent', value: 20 }))).toBe('20% הנחה');
-    expect(valueLabel(c({ type: 'other' }))).toBe('');
-  });
   it('usedAmount sums the history', () => {
     expect(usedAmount(c({ usages: [{ amount: 50 }, { amount: 30.5 }, { amount: null }] }))).toBe(80.5);
     expect(usedAmount(c({}))).toBe(0);
@@ -83,10 +77,6 @@ describe('sortByExpiry', () => {
 describe('misc', () => {
   it('invite codes are 6 unambiguous characters', () => {
     for (let i = 0; i < 200; i++) expect(makeInviteCode()).toMatch(/^[A-HJ-NP-Z2-9]{6}$/);
-  });
-  it('expiry presets add months', () => {
-    expect(presetDate(1, NOW)).toBe('2026-12-15');
-    expect(presetDate(12, NOW)).toBe('2027-11-15');
   });
   it('formatDate accepts dates and timestamps', () => {
     expect(formatDate('2026-11-05')).toBe('05/11/2026');

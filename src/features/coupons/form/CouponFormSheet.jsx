@@ -1,46 +1,27 @@
 import { useRef, useState } from 'react';
 import { ChevronDown, Plus, X, Hash, Type, Gift, Check } from 'lucide-react';
-import { Button, DateInput, Field, Input, LiquidSelect, Segmented, Sheet, Switch, TextArea, cx } from '@/ui';
+import { Button, DateInput, Field, Input, LiquidSelect, Segmented, Sheet, TextArea, cx } from '@/ui';
 import { COUPON_FORMATS, COUPON_TYPES, hasValue } from '@/domain/constants';
-import { couponFromForm, firstInvalidField, formFromCoupon, validateCouponForm } from '@/domain/couponForm';
 import { usedAmount } from '@/domain/coupon';
 import { useCouponActions } from '../useCouponActions';
 import { CategoryPicker } from './CategoryPicker';
+import { CvvField } from './CvvField';
 import { StoreInput } from './StoreInput';
+import { useCouponForm } from './useCouponForm';
 
 /** Add / edit a coupon. Errors show next to their field and the form scrolls to the first one. */
 export function CouponFormSheet({ coupon, family, user, categories, stores, onClose }) {
   const editing = !!coupon;
   const actions = useCouponActions(family, user);
   const body = useRef(null);
-  const [f, setF] = useState(() => formFromCoupon(coupon));
+  const { f, set, errors, hasErrors, unsaved, pickable, toggleCategory, submit } = useCouponForm(coupon, categories, body);
   const [more, setMore] = useState(!!(coupon?.source || coupon?.notes || coupon?.format === 'physical'));
-  const [errors, setErrors] = useState({});
-  const [initial] = useState(() => JSON.stringify(formFromCoupon(coupon)));
-  const unsaved = JSON.stringify(f) !== initial;
-  // the coupon's own categories stay listed (e.g. one the family removed) so they can still be unticked
-  const [ownCats] = useState(() => formFromCoupon(coupon).categories);
-  const pickable = [...new Set([...categories, ...ownCats])];
 
-  const set = (k, errKey = k) => (e) => {
-    const v = e?.target ? e.target.value : e;
-    setF((p) => ({ ...p, [k]: v }));
-    if (errors[errKey]) setErrors((p) => ({ ...p, [errKey]: undefined }));
-  };
-
-  function save() {
-    const e = validateCouponForm(f);
-    setErrors(e);
-    const first = firstInvalidField(e);
-    if (first) {
-      const el = body.current?.querySelector(`[data-field="${first}"]`);
-      el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
-      el?.querySelector('input')?.focus({ preventScroll: true });
-      return;
-    }
-    actions.save(couponFromForm(f, coupon), coupon, categories);
-    onClose();
-  }
+  const save = () =>
+    submit((data) => {
+      actions.save(data, coupon, categories);
+      onClose();
+    });
 
   const used = editing ? usedAmount(coupon) : 0;
   const unit = f.type === 'money' ? '₪' : f.type === 'percent' ? '%' : null;
@@ -77,7 +58,7 @@ export function CouponFormSheet({ coupon, family, user, categories, stores, onCl
           <CategoryPicker
             categories={pickable}
             selected={f.categories}
-            onToggle={(c) => set('categories')(f.categories.includes(c) ? f.categories.filter((x) => x !== c) : [...f.categories, c])}
+            onToggle={toggleCategory}
             adding={f.addingCategory}
             onAdding={set('addingCategory', 'category')}
             newName={f.newCategory}
@@ -123,35 +104,7 @@ export function CouponFormSheet({ coupon, family, user, categories, stores, onCl
           />
         </Field>
 
-        {/* optional 3-digit verification code (like a credit card's), behind a switch */}
-        <div data-field="cvv">
-          <div className="flex min-h-[46px] items-center justify-between gap-3">
-            <label className="flex items-center gap-2.5 text-xs font-medium tracking-wide text-mute">
-              <Switch checked={f.hasCvv} onChange={set('hasCvv', 'cvv')} label="קוד אימות" />
-              קוד אימות
-              <span className="font-light text-mute/45">(לא חובה)</span>
-            </label>
-            {f.hasCvv && (
-              <Input
-                id="cvv"
-                dir="ltr"
-                inputMode="numeric"
-                autoComplete="off"
-                value={f.cvv}
-                onChange={(e) => set('cvv')(e.target.value.replace(/\D/g, '').slice(0, 3))}
-                placeholder="3 ספרות"
-                aria-label="קוד אימות (3 ספרות)"
-                error={errors.cvv}
-                className="w-[8rem] text-center font-mono tracking-[0.35em] placeholder:font-sans placeholder:tracking-normal"
-              />
-            )}
-          </div>
-          {errors.cvv && (
-            <p role="alert" className="mt-1 text-left text-[12px] font-medium text-danger">
-              {errors.cvv}
-            </p>
-          )}
-        </div>
+        <CvvField on={f.hasCvv} onToggle={set('hasCvv', 'cvv')} value={f.cvv} onChange={set('cvv')} error={errors.cvv} />
 
         <button type="button" className="flex items-center gap-1 text-[13px] font-medium text-gold-dark" onClick={() => setMore((m) => !m)} aria-expanded={more}>
           פרטים נוספים
@@ -170,7 +123,7 @@ export function CouponFormSheet({ coupon, family, user, categories, stores, onCl
             </Field>
           </div>
         )}
-        {Object.values(errors).some(Boolean) && (
+        {hasErrors && (
           <p className="flex items-center gap-1.5 rounded-[10px] bg-danger/5 px-3 py-2 text-[12px] text-danger">
             <X className="h-3.5 w-3.5" strokeWidth={2} /> יש להשלים את השדות המסומנים
           </p>

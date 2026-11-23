@@ -11,7 +11,6 @@ import { FilterPanel } from './filters/FilterPanel';
 import { ActiveFilters } from './filters/ActiveFilters';
 import { useHomeView } from './useHomeView';
 import { BrandsBoardSheet } from './brands/BrandsBoardSheet';
-import { useBackClose } from '@/hooks/useBackClose';
 import { BRAND_LIST } from '@/domain/brands';
 
 /** Opens the board of chains whose logo the app shows by itself. */
@@ -34,7 +33,6 @@ export function HomePage({ coupons, alertDays, onOpen, onAdd, onDelete }) {
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [panel, setPanel] = useState(false);
   const [brands, setBrands] = useState(false);
-  useBackClose(brands, () => setBrands(false));
   const view = useHomeView(coupons, alertDays, query, filters);
   const board = brands && <BrandsBoardSheet onClose={() => setBrands(false)} />;
 

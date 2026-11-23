@@ -53,15 +53,6 @@ export function urgency(coupon, alertDays, now) {
 /** What's left on a voucher (balance falls back to the face value). */
 export const balanceOf = (c) => (isMoney(c) ? c.balance ?? c.value ?? 0 : 0);
 
-/** Short human description of a coupon's worth. */
-export function valueLabel(c) {
-  if (isMoney(c)) {
-    if (c.balance != null && c.balance !== c.value) return `נותר ${money(c.balance)} מתוך ${money(c.value)}`;
-    return money(c.value);
-  }
-  if (c.type === 'percent' && c.value) return `${c.value}% הנחה`;
-  return '';
-}
 
 export function sortByExpiry(a, b) {
   if (!a.expiry && !b.expiry) return (a.title || '').localeCompare(b.title || '', 'he');
@@ -72,8 +63,15 @@ export function sortByExpiry(a, b) {
 
 export const usedAmount = (c) => (c.usages || []).reduce((s, u) => s + (Number(u.amount) || 0), 0);
 
-/** Balance after the face value of a partly used voucher is edited. */
-export const rebalance = (newValue, coupon) => Math.max(0, round2(newValue - usedAmount(coupon)));
+/**
+ * Balance after a voucher's face value is edited: the current balance moves by the same amount. (Not "value
+ * minus history": a voucher restored from the archive keeps its history but has its full balance back.)
+ * A coupon that only now becomes a voucher starts with its full value.
+ */
+export function rebalance(newValue, coupon) {
+  if (!isMoney(coupon)) return newValue;
+  return Math.max(0, round2(balanceOf(coupon) + newValue - (coupon.value ?? 0)));
+}
 
 /**
  * Plan a redemption. amount = null means "used it all".

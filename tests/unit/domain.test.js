@@ -26,8 +26,11 @@ describe('planRedemption', () => {
 });
 
 describe('balances', () => {
-  it('rebalance after editing the face value keeps what was used', () => expect(rebalance(300, voucher({ usages: [{ amount: 50 }] }))).toBe(250));
-  it('rebalance never goes negative', () => expect(rebalance(30, voucher({ usages: [{ amount: 50 }] }))).toBe(0));
+  it('rebalance after editing the face value keeps what was used', () => expect(rebalance(300, voucher({ balance: 150, usages: [{ amount: 50 }] }))).toBe(250));
+  it('rebalance never goes negative', () => expect(rebalance(30, voucher({ balance: 150, usages: [{ amount: 50 }] }))).toBe(0));
+  // restored from the archive: the history stays, the balance is back to the full value
+  it('editing a restored voucher keeps its balance', () => expect(rebalance(200, voucher({ balance: 200, usages: [{ amount: 200 }] }))).toBe(200));
+  it('a coupon that becomes a voucher starts with its full value', () => expect(rebalance(120, { type: 'product', value: null, balance: null })).toBe(120));
   it('balanceOf falls back to the face value', () => expect(balanceOf(voucher({ balance: undefined }))).toBe(200));
   it('summary counts and sums', () => {
     const active = [voucher({ balance: 120, expiry: '2026-11-20' }), voucher({ id: 'b', balance: 80 }), { id: 'p', status: 'active', type: 'percent', value: 10 }];

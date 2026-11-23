@@ -248,3 +248,26 @@ test('T59 the coupon type is a drop-down beside the name: pick, outside tap and 
   await expect(menu).toBeHidden();
   await expect(type).toHaveText('אחוזים');
 });
+
+test('T63 the phone back button asks before closing a coupon form with typed data', async ({ page }) => {
+  await setup(page);
+  await page.getByTestId('fab-add').click();
+  const s = sheet(page, 'קופון חדש');
+  await s.getByLabel('שם הקופון').fill('חצי מוכן');
+  await page.goBack();
+  const ask = page.getByRole('alertdialog', { name: 'לסגור בלי לשמור?' });
+  await expect(ask).toBeVisible();
+  await ask.getByRole('button', { name: 'המשך עריכה' }).click();
+  await expect(s).toBeVisible();
+  await expect(s.getByLabel('שם הקופון')).toHaveValue('חצי מוכן');
+  // back again, and this time close
+  await page.goBack();
+  await ask.getByRole('button', { name: 'סגירה' }).click();
+  await expect(s).toBeHidden();
+  // an untouched form closes straight away
+  await page.getByTestId('fab-add').click();
+  await expect(s).toBeVisible();
+  await page.goBack();
+  await expect(s).toBeHidden();
+  await expect(ask).toHaveCount(0);
+});

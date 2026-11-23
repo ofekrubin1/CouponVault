@@ -66,7 +66,11 @@ export function FamilySection({ family }) {
             </p>
             <p className="text-[11px] font-light text-mute/50">{family.members.length} חברים</p>
           </div>
-          <button type="button" className={iconBtn} onClick={() => setEditing(true)} aria-label="שינוי שם המשפחה">
+          <button type="button" className={iconBtn} onClick={() => {
+              setName(family.name); // someone else may have renamed it meanwhile
+              setEditing(true);
+            }}
+            aria-label="שינוי שם המשפחה">
             <Pencil className="h-4 w-4" strokeWidth={1.5} />
           </button>
         </div>

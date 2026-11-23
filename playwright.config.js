@@ -16,7 +16,9 @@ export default defineConfig({
     locale: 'he-IL',
     timezoneId: 'Asia/Jerusalem',
     trace: 'retain-on-failure',
-    screenshot: 'only-on-failure',
+    // SHOW=1: a screenshot and a video of every test in the HTML report (to watch what the tests do)
+    screenshot: process.env.SHOW ? 'on' : 'only-on-failure',
+    video: process.env.SHOW ? 'on' : 'off',
   },
   projects: [
     { name: 'iphone', use: { ...devices['iPhone 13'] } },

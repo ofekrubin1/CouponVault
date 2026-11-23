@@ -1,13 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useBackClose } from '@/hooks/useBackClose';
 
 /**
  * Which coupon sheet is open: null | { kind: 'detail', id } | { kind: 'form', id? }.
- * The phone's back button closes it, and it closes by itself if its coupon disappears (deleted elsewhere).
+ * It closes by itself if its coupon disappears (deleted elsewhere). The back button is handled by the Sheet.
  */
 export function useCouponSheet(coupons) {
   const [sheet, setSheet] = useState(null);
-  useBackClose(!!sheet, () => setSheet(null));
 
   const current = sheet?.id ? coupons?.find((c) => c.id === sheet.id) : null;
   useEffect(() => {

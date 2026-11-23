@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import { useBackClose } from '@/hooks/useBackClose';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
 import { useSheetDrag } from '@/hooks/useSheetDrag';
@@ -51,7 +52,7 @@ function useFocusedFieldVisible(bodyRef, keyboard) {
  *   focused field is scrolled into view. Without a keyboard it's simply pinned to the screen.
  * - Locks the page behind it (iOS-safe); scrolling stays inside the sheet.
  * - Pull down to dismiss: from the handle, or from the content when it's at the top.
- * The back button is handled by the caller (useBackClose).
+ * - The phone's back button closes it too (through the same "close without saving?" question).
  * `unsaved`: there is typed data; closing (X, backdrop, Escape, pull) first asks "close without saving?".
  * `dragFromContent: false`: only the handle/header pulls the sheet down (for forms).
  */
@@ -79,6 +80,7 @@ export function Sheet({ title, onClose, children, footer, actions, label, tall =
     closeRef.current();
   }).current;
 
+  useBackClose(true, requestClose);
   useSheetDrag(sheet, body, handle, requestClose, { fromContent: dragFromContent, confirm: () => unsavedRef.current });
   useFocusedFieldVisible(body, vp.keyboard);
 
