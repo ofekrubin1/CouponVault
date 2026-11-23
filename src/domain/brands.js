@@ -2,6 +2,7 @@
 // A store that is a link uses that site directly. Pure functions; the brand data is in brandCatalog.js.
 import { isUrl, urlHost } from './links';
 import { BRANDS, LABELS, OWN_LOGOS } from './brandCatalog';
+import { LOCAL_ICONS } from './brandIcons';
 
 const norm = (s) => (s || '').toLowerCase().replace(/[\s\-_'"׳״.:]/g, '');
 
@@ -53,11 +54,17 @@ export const isOwnLogo = (src) => src.startsWith('/brands/');
 /** Public logo image for a domain (Google's site-icon service; no key needed). */
 export const logoUrl = (domain) => `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
 
-/** Images to try for a brand, best first: the logo stored with the app, then the brand's site icon. */
+/**
+ * Images to try for a brand, best first: its logo stored with the app, else its site icon stored with the app
+ * (scripts/fetch-brand-icons.mjs), then the site icon from Google. Images the app serves itself can also be
+ * drawn into a shared coupon image; Google's can't (no CORS).
+ */
 export function logoSources(domain) {
   const own = ownLogo(domain);
   const icon = logoUrl(domain);
-  return own ? [own.src, icon] : [icon];
+  if (own) return [own.src, icon];
+  if (LOCAL_ICONS[domain]) return [`/brands/icons/${LOCAL_ICONS[domain]}`, icon];
+  return [icon];
 }
 
 /** True when the brand's stored logo is a long wordmark, shown on a wider tile so it stays readable. */

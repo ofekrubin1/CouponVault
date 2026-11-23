@@ -236,6 +236,12 @@ describe('brand logos', () => {
     expect(logoSources('azrielimalls.co.il')[0]).toBe('/brands/azrieli.png');
     expect(isWideLogo('azrielimalls.co.il')).toBe(true);
   });
+  it('every known brand has a logo served by the app itself (so it can go into a shared image)', () => {
+    expect(logoSources('aroma.co.il')).toEqual(['/brands/icons/aroma.co.il.png', logoUrl('aroma.co.il')]);
+    expect(logoSources('htzone.co.il')[0]).toBe('/brands/icons/htzone.co.il.jpg');
+    for (const b of BRAND_LIST) expect([b.domain, isOwnLogo(logoSources(b.domain)[0])]).toEqual([b.domain, true]);
+    expect(logoSources('some-unknown-shop.co.il')).toEqual([logoUrl('some-unknown-shop.co.il')]); // only the remote icon
+  });
   it('short names only match as a whole word', () => {
     expect(brandDomainOf('פנאי ובילוי')).toBeNull(); // contains "ילו"
     expect(brandDomainOf('מתנה לחבר')).toBeNull(); // contains "חבר"
@@ -249,7 +255,7 @@ describe('brand logos', () => {
     const [first, second] = logoSources('buyme.co.il');
     expect(first).toBe('/brands/buyme.svg');
     expect(second).toContain('domain=buyme.co.il');
-    expect(logoSources('zara.com')).toHaveLength(1);
+    expect(logoSources('zara.com')).toEqual(['/brands/icons/zara.com.png', logoUrl('zara.com')]); // its stored site icon
   });
 });
 
@@ -294,7 +300,7 @@ describe('brands board', () => {
     expect(logoSources('dreamcard.co.il')).toEqual(['/brands/dreamcard.png', logoUrl('dreamcard.co.il')]);
     expect(isWideLogo('dreamcard.co.il')).toBe(true);
     expect(isWideLogo('powergift.co.il')).toBe(false);
-    expect(logoSources('zara.com')).toEqual([logoUrl('zara.com')]);
+    expect(logoSources('zara.com')[0]).toBe('/brands/icons/zara.com.png');
   });
   it('dropped brands are no longer recognised', () => {
     for (const n of ['אמזון', 'נקסט', 'גודי', 'עלי אקספרס', 'קרוקס']) expect(brandDomainOf(n), n).toBe(null);

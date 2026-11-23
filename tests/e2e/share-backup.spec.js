@@ -21,7 +21,7 @@ async function captureFiles(page, { picker }) {
     if (hasPicker) {
       window.showSaveFilePicker = async (opts) => {
         const parts = [];
-        return { createWritable: async () => ({ write: async (b) => parts.push(b), close: async () => window.__saved.push({ name: opts.suggestedName, text: await new Blob(parts).text() }) }) };
+        return { createWritable: async () => ({ write: async (b) => parts.push(b), close: async () => { const blob = new Blob(parts); window.__saved.push({ name: opts.suggestedName, text: await blob.text(), head: [...new Uint8Array(await blob.slice(0, 3).arrayBuffer())] }); } }) };
       };
     } else {
       delete window.showSaveFilePicker;
@@ -32,7 +32,7 @@ async function captureFiles(page, { picker }) {
 const full = { title: 'שובר מתנה', store: 'Buyme', type: 'money', value: 400, balance: 250, code: 'BM-48213', cvv: '412', expiry: '2031-04-01', format: 'physical', notes: 'רק בסניפים' };
 
 test('T67 sharing a coupon sends an image of it with its details as text', async ({ page }, info) => {
-  await page.route('**/s2/favicons**', (route) => route.fulfill({ path: 'public/icon-192.png', contentType: 'image/png', headers: { 'Access-Control-Allow-Origin': '*' } }));
+  await page.route('**/s2/favicons**', (route) => route.fulfill({ path: 'public/icon-192.png', contentType: 'image/png' })); // like Google: no CORS header
   await captureFiles(page, { picker: false });
   const { familyId } = await setup(page);
   await seed(page, familyId, [full]);
@@ -67,16 +67,19 @@ test('T68 backup saves every family and all its coupons (archive too) as one JSO
 
   let name;
   let json;
+  let head;
   if (phone) {
     await expect.poll(() => page.evaluate(() => window.__shared.length)).toBe(1);
     const [sent] = await page.evaluate(() => window.__shared);
     name = sent.files[0].name;
     expect(sent.files[0].type).toBe('application/json');
     json = await page.evaluate(async (url) => (await fetch(url)).text(), sent.files[0].dataUrl);
+    head = [...Buffer.from(sent.files[0].dataUrl.split(',')[1], 'base64').subarray(0, 3)];
   } else {
     await expect.poll(() => page.evaluate(() => window.__saved.length)).toBe(1);
-    [{ name, text: json }] = await page.evaluate(() => window.__saved);
+    [{ name, text: json, head }] = await page.evaluate(() => window.__saved);
   }
+  expect(head).toEqual([0xef, 0xbb, 0xbf]); // the UTF-8 mark, so Hebrew reads right in Notepad / Excel
   expect(name).toMatch(/^couponvault-backup-\d{4}-\d{2}-\d{2}\.json$/);
   const backup = JSON.parse(json);
   expect(backup).toMatchObject({ app: 'CouponVault', version: 1 });
@@ -87,8 +90,28 @@ test('T68 backup saves every family and all its coupons (archive too) as one JSO
   await expect(page.getByRole('status')).toHaveText('הגיבוי נשמר');
 });
 
+// Regression: the logo was missing from the shared image for brands whose logo came from Google's icon service,
+// which doesn't allow drawing its images (no CORS). Here it behaves like the real one.
+test('T71 the shared image carries the brand logo for every known brand (Aroma: no logo file of its own before)', async ({ page }) => {
+  await page.route('**/s2/favicons**', (route) => route.fulfill({ path: 'public/icon-192.png', contentType: 'image/png' })); // no CORS header, like Google
+  await page.addInitScript(() => {
+    window.__drawn = [];
+    const draw = CanvasRenderingContext2D.prototype.drawImage;
+    CanvasRenderingContext2D.prototype.drawImage = function drawImage(img, ...rest) {
+      if (img?.src) window.__drawn.push(new URL(img.src).pathname);
+      return draw.call(this, img, ...rest);
+    };
+  });
+  await captureFiles(page, { picker: false });
+  const { familyId } = await setup(page);
+  await seed(page, familyId, [{ title: 'קפה ומאפה', store: 'ארומה', type: 'product', code: 'AR-3301' }]);
+  const s = await openTicket(page, 'קפה ומאפה');
+  await expect(s.getByRole('button', { name: 'שיתוף' })).toBeEnabled({ timeout: 15000 });
+  expect(await page.evaluate(() => window.__drawn)).toContain('/brands/icons/aroma.co.il.png');
+});
+
 test('T70 a coupon can also be shared from its row, by swiping it open', async ({ page }) => {
-  await page.route('**/s2/favicons**', (route) => route.fulfill({ path: 'public/icon-192.png', contentType: 'image/png', headers: { 'Access-Control-Allow-Origin': '*' } }));
+  await page.route('**/s2/favicons**', (route) => route.fulfill({ path: 'public/icon-192.png', contentType: 'image/png' })); // like Google: no CORS header
   await captureFiles(page, { picker: false });
   const { familyId } = await setup(page);
   await seed(page, familyId, [full]);

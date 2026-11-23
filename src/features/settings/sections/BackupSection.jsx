@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { DatabaseBackup, Download } from 'lucide-react';
 import { Card, useToast } from '@/ui';
 import { fetchCoupons } from '@/data';
-import { backupFileName, buildBackup } from '@/domain/backup';
+import { backupFileName, backupText, buildBackup } from '@/domain/backup';
 import { saveFileAs } from '@/services/files';
 import { SectionTitle } from '../SectionTitle';
 
@@ -21,7 +21,7 @@ function useBackupFile(user, families) {
         if (!live) return;
         const couponsByFamily = Object.fromEntries(pairs);
         const backup = buildBackup({ user, families, couponsByFamily });
-        const file = new File([JSON.stringify(backup, null, 2)], backupFileName(), { type: 'application/json' });
+        const file = new File([backupText(backup)], backupFileName(), { type: 'application/json' });
         setReady({ file, coupons: pairs.reduce((n, [, list]) => n + list.length, 0) });
       })
       .catch((e) => console.error('[backup]', e));

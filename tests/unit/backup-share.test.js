@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildBackup, backupFileName } from '@/domain/backup';
+import { buildBackup, backupFileName, backupText } from '@/domain/backup';
 import { couponShareText, shareFileName } from '@/domain/share';
 
 const ts = (iso) => ({ toDate: () => new Date(iso) }); // a Firestore Timestamp, as the SDK returns it
@@ -32,6 +32,14 @@ describe('backup', () => {
   it('leaves out what only this phone knows and the invite code', () => {
     expect(b.families[0]).not.toHaveProperty('synced');
     expect(b.families[0]).not.toHaveProperty('inviteCode');
+  });
+  // Regression: Hebrew showed as gibberish in Notepad / Excel / a browser: without a byte-order mark they
+  // don't read the file as UTF-8.
+  it('the file text starts with the UTF-8 mark and is otherwise plain JSON', () => {
+    const text = backupText(b);
+    expect(text.charCodeAt(0)).toBe(0xfeff);
+    expect(JSON.parse(text.slice(1))).toEqual(b);
+    expect(new TextEncoder().encode(text).slice(0, 3)).toEqual(new Uint8Array([0xef, 0xbb, 0xbf]));
   });
   it('file name carries the date', () => expect(backupFileName(new Date('2026-11-24T08:00:00Z'))).toBe('couponvault-backup-2026-11-24.json'));
 });
