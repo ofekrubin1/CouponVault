@@ -274,3 +274,23 @@ test('T63 the phone back button asks before closing a coupon form with typed dat
   await expect(s).toBeHidden();
   await expect(ask).toHaveCount(0);
 });
+
+// Regression: on a computer, clicking the expiry field did nothing (the calendar only opens from the
+// browser's own icon, which is hidden). A click must open the date picker.
+test('T69 clicking the expiry field opens the date picker', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.__pickers = 0;
+    HTMLInputElement.prototype.showPicker = function showPicker() {
+      if (this.id === 'expiry') window.__pickers += 1; // (the Windows test WebKit has no date inputs: it's a text field there)
+    };
+  });
+  await setup(page);
+  await page.getByTestId('fab-add').click();
+  const s = sheet(page, 'קופון חדש');
+  await page.waitForTimeout(450); // sheet slide-in
+  await s.locator('#expiry').click();
+  await expect.poll(() => page.evaluate(() => window.__pickers)).toBe(1);
+  // and a date chosen there shows in the field
+  await s.locator('#expiry').fill('2031-04-01');
+  await expect(s.getByText('01/04/2031')).toBeVisible();
+});

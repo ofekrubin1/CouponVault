@@ -4,6 +4,7 @@ import { AlertsSection } from './sections/AlertsSection';
 import { CategoriesSection } from './sections/CategoriesSection';
 import { FamiliesSection } from './sections/FamiliesSection';
 import { AccountSection } from './sections/AccountSection';
+import { BackupSection } from './sections/BackupSection';
 
 /** Settings: one card per topic (each section owns its own state and actions). */
 export function SettingsPage({ user, family, families, alertDays }) {
@@ -14,6 +15,7 @@ export function SettingsPage({ user, family, families, alertDays }) {
       <AlertsSection user={user} alertDays={alertDays} />
       <CategoriesSection family={family} />
       <FamiliesSection user={user} family={family} families={families} />
+      <BackupSection user={user} families={families} />
       <AccountSection user={user} />
     </div>
   );

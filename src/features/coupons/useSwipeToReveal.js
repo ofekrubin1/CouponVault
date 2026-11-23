@@ -107,7 +107,8 @@ export function useSwipeToReveal(id, width, enabled = true) {
       if (mode !== 'h') return;
       let target;
       if (Math.abs(velocity) > 0.45) target = Math.sign(velocity) === Math.sign(last) || !base ? Math.sign(velocity) * width : 0;
-      else target = Math.abs(last) > width * 0.5 ? Math.sign(last) * width : 0;
+      // a slow drag opens past ~a thumb's width, however wide the revealed actions are (so it feels the same)
+      else target = Math.abs(last) > Math.min(width * 0.5, 32) ? Math.sign(last) * width : 0;
       if (base && target && Math.sign(target) !== Math.sign(base)) target = 0;
       settle(target);
     };

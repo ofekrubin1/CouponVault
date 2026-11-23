@@ -1,10 +1,11 @@
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Share2, Trash2 } from 'lucide-react';
 import { IconButton, Sheet } from '@/ui';
 import { useCouponActions } from '../useCouponActions';
 import { CouponHero } from './CouponHero';
 import { CouponCode, CouponInfo } from './CouponInfo';
 import { UsageHistory } from './UsageHistory';
 import { RedeemBar } from './RedeemBar';
+import { useCouponShare } from '../share/useCouponShare';
 
 /**
  * A coupon's sheet: card, code, details, history and the redeem bar.
@@ -12,6 +13,7 @@ import { RedeemBar } from './RedeemBar';
  */
 export function CouponDetailSheet({ coupon, family, user, alertDays, onClose, onEdit, onDone, startPartial = false }) {
   const actions = useCouponActions(family, user);
+  const sharing = useCouponShare(coupon);
   const done = onDone || onClose;
 
   const partial = (amount) => {
@@ -38,6 +40,7 @@ export function CouponDetailSheet({ coupon, family, user, alertDays, onClose, on
       }
       actions={
         <>
+          <IconButton icon={Share2} label="שיתוף" onClick={sharing.share} disabled={!sharing.ready} className="disabled:opacity-40" data-testid="share-coupon" />
           <IconButton icon={Pencil} label="עריכה" onClick={onEdit} />
           <IconButton icon={Trash2} label="מחיקה" tone="danger" onClick={remove} />
         </>

@@ -30,13 +30,14 @@ const actions = (page, title) => row(page, title).getByTestId('swipe-actions');
 const expectOpen = (page, title) => expect(actions(page, title)).toHaveAttribute('aria-hidden', 'false');
 const expectClosed = (page, title) => expect(actions(page, title)).toHaveAttribute('aria-hidden', 'true');
 
-test('T42 swipe reveals a single small delete button; delete asks first', async ({ page }) => {
+test('T42 swipe reveals small share and delete buttons; delete asks first', async ({ page }) => {
   const { familyId } = await setup(page);
   await seed(page, familyId, [{ title: 'למחוק בסלייד', store: 'x', type: 'other' }]);
   await swipe(page, 'למחוק בסלייד', -200);
   await expectOpen(page, 'למחוק בסלייד');
-  // only delete, and small
-  await expect(actions(page, 'למחוק בסלייד').getByRole('button')).toHaveCount(1);
+  // share and delete, both small
+  await expect(actions(page, 'למחוק בסלייד').getByRole('button')).toHaveCount(2);
+  await expect(actions(page, 'למחוק בסלייד').getByRole('button', { name: 'שיתוף' })).toBeVisible();
   const del = actions(page, 'למחוק בסלייד').getByRole('button', { name: 'מחיקה' });
   const box = await del.boundingBox();
   expect(box.width).toBeLessThanOrEqual(44);

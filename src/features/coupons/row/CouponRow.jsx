@@ -1,12 +1,14 @@
-import { Trash2 } from 'lucide-react';
+import { Share2, Trash2 } from 'lucide-react';
 import { cx } from '@/ui';
 import { balanceOf, daysLeft, expiryLabel, isMoney, isPhysical, urgency } from '@/domain/coupon';
 import { displayStore } from '@/domain/links';
 import { formatDate, money } from '@/domain/format';
 import { BrandLogo } from '../BrandLogo';
 import { useSwipeToReveal } from '../useSwipeToReveal';
+import { useCouponShare } from '../share/useCouponShare';
 
-const DELETE_W = 64; // how far the row slides open to show the delete button
+const REVEAL_W = 112; // how far the row slides open to show the share and delete buttons
+const ACTION = 'flex h-9 w-9 items-center justify-center rounded-full border bg-white transition-transform duration-150 active:scale-90 disabled:opacity-40';
 
 /** What the coupon is worth, on the left of the first line. */
 function Worth({ coupon }) {
@@ -42,11 +44,12 @@ function Expiry({ coupon, alertDays }) {
 
 /**
  * A coupon as two compact lines, like a line in a notepad: name and worth, then store · code and expiry.
- * With onDelete it can be swiped either way to reveal a delete button.
+ * With onDelete it can be swiped either way to reveal share and delete buttons.
  */
 export function CouponRow({ coupon, alertDays, onClick, onDelete }) {
   const swipeable = !!onDelete;
-  const swipe = useSwipeToReveal(coupon.id, DELETE_W, swipeable);
+  const swipe = useSwipeToReveal(coupon.id, REVEAL_W, swipeable);
+  const sharing = useCouponShare(coupon, swipeable && swipe.open); // drawn once the row is open
 
   return (
     <div className="relative" data-testid="coupon-row" data-title={coupon.title}>
@@ -58,18 +61,34 @@ export function CouponRow({ coupon, alertDays, onClick, onDelete }) {
           data-testid="swipe-actions"
           aria-hidden={!swipe.open}
         >
-          <button
-            type="button"
-            tabIndex={swipe.open ? 0 : -1}
-            onClick={() => {
-              swipe.close();
-              onDelete(coupon);
-            }}
-            aria-label="מחיקה"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-danger/15 bg-white text-danger shadow-[0_4px_14px_rgba(192,57,43,0.14)] transition-transform duration-150 active:scale-90"
-          >
-            <Trash2 className="h-4 w-4" strokeWidth={1.75} />
-          </button>
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              tabIndex={swipe.open ? 0 : -1}
+              disabled={!sharing.ready}
+              onClick={async () => {
+                await sharing.share();
+                swipe.close();
+              }}
+              aria-label="שיתוף"
+              data-testid="row-share"
+              className={cx(ACTION, 'border-accent/20 text-accent shadow-[0_4px_14px_rgba(92,116,170,0.18)]')}
+            >
+              <Share2 className="h-4 w-4" strokeWidth={1.75} />
+            </button>
+            <button
+              type="button"
+              tabIndex={swipe.open ? 0 : -1}
+              onClick={() => {
+                swipe.close();
+                onDelete(coupon);
+              }}
+              aria-label="מחיקה"
+              className={cx(ACTION, 'border-danger/15 text-danger shadow-[0_4px_14px_rgba(192,57,43,0.14)]')}
+            >
+              <Trash2 className="h-4 w-4" strokeWidth={1.75} />
+            </button>
+          </div>
         </div>
       )}
 

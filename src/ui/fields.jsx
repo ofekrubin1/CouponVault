@@ -79,6 +79,15 @@ export function DateInput({ id, value, onChange, min, placeholder = 'בחר תא
         value={value || ''}
         min={min}
         onChange={(e) => onChange(e.target.value)}
+        // A computer's browser opens the calendar only from its own (here invisible) icon, so open it on any
+        // click. Phones open it on tap anyway; where showPicker isn't allowed it simply throws.
+        onClick={(e) => {
+          try {
+            e.currentTarget.showPicker?.();
+          } catch {
+            /* not supported / already open */
+          }
+        }}
         className="absolute inset-0 h-full w-full min-w-0 cursor-pointer opacity-0"
         style={{ fontSize: 16, boxSizing: 'border-box' }}
       />

@@ -1,12 +1,15 @@
 // Coupons of a family and the writes that change them. The rules (how much is left, when a voucher is used
 // up) come from domain/coupon.js; this file only turns them into Firestore writes.
-import { arrayRemove, arrayUnion, collection, deleteDoc, doc, increment, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
+import { arrayRemove, arrayUnion, collection, deleteDoc, doc, getDocs, increment, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/services/firebase';
 import { balanceAfterUndo, isMoney, planRedemption } from '@/domain/coupon';
 import { background, docsOf, liveSnapshot } from './sync';
 
 const couponsCol = (familyId) => collection(db, 'families', familyId, 'coupons');
 const couponDoc = (familyId, id) => doc(db, 'families', familyId, 'coupons', id);
+
+/** All coupons of a family, once (for the backup). */
+export const fetchCoupons = async (familyId) => docsOf(await getDocs(couponsCol(familyId)));
 
 export const watchCoupons = (familyId, cb, onError) => liveSnapshot(couponsCol(familyId), {}, (snap) => cb(docsOf(snap)), onError);
 
