@@ -1,6 +1,6 @@
 import { Share2, Trash2 } from 'lucide-react';
 import { cx } from '@/ui';
-import { balanceOf, daysLeft, expiryLabel, isMoney, isPhysical, urgency } from '@/domain/coupon';
+import { balanceOf, daysLeft, expiryText, isMoney, isPhysical, urgency } from '@/domain/coupon';
 import { displayStore } from '@/domain/links';
 import { formatDate, money } from '@/domain/format';
 import { BrandLogo } from '../BrandLogo';
@@ -27,7 +27,7 @@ function Worth({ coupon }) {
 /** Expiry on the left of the second line: red pill when it's days away, amber inside the alert window, else the date. */
 function Expiry({ coupon, alertDays }) {
   const u = urgency(coupon, alertDays);
-  const text = u ? expiryLabel(coupon) : daysLeft(coupon) === null ? 'ללא תוקף' : formatDate(coupon.expiry);
+  const text = u ? expiryText(coupon, alertDays) : daysLeft(coupon) === null ? 'ללא תוקף' : formatDate(coupon.expiry);
   return (
     <span
       data-testid="row-expiry"

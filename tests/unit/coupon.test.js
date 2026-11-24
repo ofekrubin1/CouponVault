@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { daysLeft, isExpired, isActive, expiryLabel, urgency, sortByExpiry, usedAmount } from '@/domain/coupon';
+import { daysLeft, isExpired, isActive, expiryLabel, expiryText, urgency, sortByExpiry, usedAmount } from '@/domain/coupon';
 import { money, formatDate, round2, firstName } from '@/domain/format';
 import { makeInviteCode } from '@/domain/family';
 
@@ -24,6 +24,26 @@ describe('isExpired / isActive', () => {
     const used = c({ status: 'used', expiry: '2026-01-01' });
     expect(isActive(used, NOW)).toBe(false);
     expect(isExpired(used, NOW)).toBe(false);
+  });
+});
+
+// Regression: inside a 60-day alert window a coupon 37 days away read "עד 31/12/2026" instead of the days left.
+describe('expiryText (days left whenever the coupon is inside the alert window)', () => {
+  const at = (days) => {
+    const d = new Date(NOW);
+    d.setDate(d.getDate() + days);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+  it('inside the window: always the days left', () => {
+    expect(expiryText(c({ expiry: at(37) }), 60, NOW)).toBe('עוד 37 ימים');
+    expect(expiryText(c({ expiry: at(19) }), 60, NOW)).toBe('עוד 19 ימים');
+    expect(expiryText(c({ expiry: at(1) }), 14, NOW)).toBe('פג מחר');
+    expect(expiryText(c({ expiry: at(0) }), 14, NOW)).toBe('פג היום');
+  });
+  it('outside the window: the date; no expiry / expired as before', () => {
+    expect(expiryText(c({ expiry: at(37) }), 30, NOW)).toMatch(/^עד \d\d\/\d\d\/\d{4}$/);
+    expect(expiryText(c({}), 14, NOW)).toBe('ללא תוקף');
+    expect(expiryText(c({ expiry: at(-2) }), 14, NOW)).toMatch(/^פג ב-/);
   });
 });
 

@@ -53,6 +53,18 @@ export function expiryLabel(coupon, now) {
   return `עד ${formatDate(coupon.expiry)}`;
 }
 
+/**
+ * What the coupon says about its expiry: inside the alert window always the days left ("עוד 37 ימים"), outside
+ * it the date. (expiryLabel counts days only up to 30, so a longer window used to show a date instead.)
+ */
+export function expiryText(coupon, alertDays, now) {
+  const d = daysLeft(coupon, now);
+  if (d === null || d < 0 || d > alertDays) return expiryLabel(coupon, now);
+  if (d === 0) return 'פג היום';
+  if (d === 1) return 'פג מחר';
+  return `עוד ${d} ימים`;
+}
+
 /** 'red' (≤3 days) | 'gold' (≤ alertDays) | null for an active coupon. */
 export function urgency(coupon, alertDays, now) {
   const d = daysLeft(coupon, now);

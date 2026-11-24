@@ -1,6 +1,6 @@
 import { Store, Gift, Clock, CheckCheck, CreditCard, ShoppingBag } from 'lucide-react';
 import { cx } from '@/ui';
-import { balanceOf, couponCategories, expiryLabel, isExpired, isMoney, isPhysical, isUsed, urgency } from '@/domain/coupon';
+import { balanceOf, couponCategories, expiryText, isExpired, isMoney, isPhysical, isUsed, urgency } from '@/domain/coupon';
 import { displayStore } from '@/domain/links';
 import { formatDate, money } from '@/domain/format';
 import { BrandLogo } from '../BrandLogo';
@@ -15,7 +15,7 @@ function ExpiryPill({ coupon, alertDays }) {
   return (
     <span className={cx('flex items-center gap-1.5 rounded-full px-2.5 py-1 font-medium', tone)}>
       <Clock className="h-3.5 w-3.5" strokeWidth={2} />
-      {expiryLabel(coupon)}
+      {expiryText(coupon, alertDays)}
     </span>
   );
 }

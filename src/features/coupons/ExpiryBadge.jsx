@@ -1,6 +1,6 @@
 import { Clock } from 'lucide-react';
 import { cx } from '@/ui';
-import { daysLeft, expiryLabel, isExpired, urgency } from '@/domain/coupon';
+import { daysLeft, expiryText, isExpired, urgency } from '@/domain/coupon';
 
 const TONES = {
   red: 'bg-danger/10 text-danger',
@@ -15,7 +15,7 @@ export function ExpiryBadge({ coupon, alertDays, className }) {
   return (
     <span className={cx('inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium', TONES[tone], className)}>
       <Clock className="h-3 w-3" strokeWidth={2} />
-      {expiryLabel(coupon)}
+      {expiryText(coupon, alertDays)}
     </span>
   );
 }

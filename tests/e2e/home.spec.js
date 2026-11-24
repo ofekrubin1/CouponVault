@@ -113,6 +113,8 @@ test('T56 the "brands with a logo" board shows every supported chain, searchable
   // reachable from the empty home screen too
   await expect(page.getByTestId('brands-button')).toBeVisible();
   await seed(page, familyId, [{ title: 'שובר', store: 'KFC', type: 'other' }]);
+  // wait for the list: the empty screen's button is replaced by the one under the list (a tap in between is lost)
+  await expect(ticket(page, 'שובר')).toBeVisible();
   const button = page.getByTestId('brands-button');
   await expect(button).toContainText('רשתות עם לוגו');
   await button.click();
@@ -133,4 +135,47 @@ test('T56 the "brands with a logo" board shows every supported chain, searchable
   await page.goBack();
   await expect(board).toBeHidden();
   await expect(page.getByTestId('coupon-list')).toContainText('שובר');
+});
+
+// Regression: with a 60-day alert window, a coupon 37 days away showed "עד <date>" instead of the days left.
+test('T72 inside the alert window a row always shows the days left, even past 30 days', async ({ page }) => {
+  const { familyId } = await setup(page);
+  await seed(page, familyId, [
+    { title: 'עוד 37', store: 'x', type: 'other', expiry: isoIn(37) },
+    { title: 'עוד 19', store: 'y', type: 'other', expiry: isoIn(19) },
+  ]);
+  await tab(page, 'הגדרות');
+  await page.getByRole('radio', { name: '60 ימים' }).click();
+  await tab(page, 'קופונים');
+  await expect(ticket(page, 'עוד 37').getByTestId('row-expiry')).toHaveText('עוד 37 ימים');
+  await expect(ticket(page, 'עוד 19').getByTestId('row-expiry')).toHaveText('עוד 19 ימים');
+  // the coupon's own card says the same
+  const s = await openTicket(page, 'עוד 37');
+  await expect(s.getByTestId('coupon-hero')).toContainText('עוד 37 ימים');
+});
+
+test('T73 tapping "N פגים בקרוב" shows only the coupons about to expire; tapping again shows all', async ({ page }) => {
+  const { familyId } = await setup(page);
+  await seed(page, familyId, [
+    { title: 'דחוף', store: 'a', category: 'אוכל', type: 'other', expiry: isoIn(3) },
+    { title: 'גם דחוף', store: 'b', category: 'ביגוד', type: 'other', expiry: isoIn(10) },
+    { title: 'רחוק', store: 'c', category: 'אוכל', type: 'other', expiry: isoIn(200) },
+    { title: 'בלי תוקף', store: 'd', type: 'other' },
+  ]);
+  const list = page.getByTestId('coupon-list').getByTestId('coupon-ticket');
+  const chip = page.getByTestId('expiring-filter');
+  await expect(list).toHaveCount(4);
+  await expect(chip).toHaveText(/2 פגים בקרוב/);
+  await expect(chip).toHaveAttribute('aria-pressed', 'false');
+  await chip.click();
+  await expect(chip).toHaveAttribute('aria-pressed', 'true');
+  await expect(list).toHaveCount(2);
+  expect(await list.evaluateAll((els) => els.map((e) => e.dataset.title))).toEqual(['דחוף', 'גם דחוף']);
+  // search works inside it
+  await page.getByRole('searchbox', { name: 'חיפוש' }).fill('גם');
+  await expect(list).toHaveCount(1);
+  await page.getByRole('button', { name: 'נקה חיפוש' }).click();
+  await chip.click();
+  await expect(chip).toHaveAttribute('aria-pressed', 'false');
+  await expect(list).toHaveCount(4);
 });

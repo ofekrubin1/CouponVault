@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Ticket, Plus, Sparkles } from 'lucide-react';
-import { Button, EmptyState } from '@/ui';
+import { Ticket, Plus, Sparkles, X, AlarmClock } from 'lucide-react';
+import { Button, EmptyState, cx } from '@/ui';
 import { money } from '@/domain/format';
 import { CouponRow, categoryLabel } from '@/features/coupons';
 import { SearchBar } from './SearchBar';
@@ -23,25 +23,31 @@ function BrandsButton({ onClick }) {
   );
 }
 
-/** One line at the top: what's left in vouchers, how many coupons, how many are about to expire. */
-function Summary({ balance, activeCount, expiringCount }) {
+/** One line at the top: what's left in vouchers, how many coupons, and a tap-to-filter "about to expire". */
+function Summary({ balance, activeCount, expiringCount, soon, onToggleSoon }) {
   return (
     <div className="flex flex-wrap items-baseline gap-x-2 px-1" data-testid="summary-card">
       <p dir="ltr" className="text-[28px] font-bold leading-none tracking-tight text-navy" data-testid="summary-balance">
         <span className="mr-0.5 text-[17px] font-semibold text-gold">₪</span>
         {money(balance).slice(1)}
       </p>
-      <p className="text-[12.5px] text-mute/70">
-        ב-{activeCount} קופונים
-        {expiringCount > 0 && (
-          <>
-            {' · '}
-            <b className="font-semibold text-danger" data-testid="summary-expiring">
-              {expiringCount} פגים בקרוב
-            </b>
-          </>
-        )}
-      </p>
+      <p className="text-[12.5px] text-mute/70">ב-{activeCount} קופונים</p>
+      {expiringCount > 0 && (
+        <button
+          type="button"
+          onClick={onToggleSoon}
+          aria-pressed={soon}
+          data-testid="expiring-filter"
+          className={cx(
+            'flex items-center gap-1 self-center rounded-full border px-2.5 py-0.5 text-[12px] font-semibold transition-colors active:scale-[0.97]',
+            soon ? 'border-danger bg-danger text-white' : 'border-danger/30 bg-danger/[0.06] text-danger',
+          )}
+        >
+          <AlarmClock className="h-3.5 w-3.5" strokeWidth={2} />
+          <span data-testid="summary-expiring">{expiringCount} פגים בקרוב</span>
+          {soon && <X className="h-3.5 w-3.5" strokeWidth={2.4} aria-label="הצג הכול" />}
+        </button>
+      )}
     </div>
   );
 }
@@ -49,8 +55,9 @@ function Summary({ balance, activeCount, expiringCount }) {
 /** Home: a short summary, search, and every active coupon in two lines, grouped by category like a notepad. */
 export function HomePage({ coupons, categories, alertDays, onOpen, onAdd, onDelete }) {
   const [query, setQuery] = useState('');
+  const [soonOnly, setSoonOnly] = useState(false);
   const [brands, setBrands] = useState(false);
-  const view = useHomeView(coupons, alertDays, categories, query);
+  const view = useHomeView(coupons, alertDays, categories, query, soonOnly);
   const board = brands && <BrandsBoardSheet onClose={() => setBrands(false)} />;
 
   if (view.active.length === 0) {
@@ -76,7 +83,7 @@ export function HomePage({ coupons, categories, alertDays, onOpen, onAdd, onDele
 
   return (
     <div className="space-y-3">
-      <Summary {...view.summary} />
+      <Summary {...view.summary} soon={view.soon} onToggleSoon={() => setSoonOnly(!view.soon)} />
       <SearchBar query={query} onQuery={setQuery} />
 
       <div className="overflow-hidden rounded-[18px] bg-white shadow-[0_2px_10px_rgba(10,31,68,0.06)]" data-testid="coupon-list">
