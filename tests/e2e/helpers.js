@@ -28,6 +28,11 @@ export async function stubClipboard(page) {
 /** Opens the app and signs in as a fresh user (Auth emulator, no Google popup). */
 export async function login(page, { name = 'דנה כהן', email, path = '/' } = {}) {
   const mail = email || `u-${uniq()}@test.dev`;
+  // Test phones have no Face ID / fingerprint (Chromium on Windows would report Windows Hello and the app would
+  // offer the lock over everything). lock.spec.js brings its own stand-in, set up before this.
+  await page.addInitScript(() => {
+    if (!window.__fakeBiometrics) window.PublicKeyCredential = undefined;
+  });
   await page.goto(path);
   await page.waitForFunction(() => !!window.__cv);
   const uid = await page.evaluate(([e, n]) => window.__cv.login(e, n), [mail, name]);
@@ -123,4 +128,25 @@ export async function secondPhone(browser, testInfo) {
 export async function noHorizontalOverflow(page) {
   const { sw, cw } = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }));
   expect(sw, 'page must not scroll sideways').toBeLessThanOrEqual(cw + 1);
+}
+
+/**
+ * Write straight to the emulator as its admin, past the security rules (e.g. a code dated 8 days ago, which the
+ * app itself can't make). `only`: update just these fields, once the document is on the server (the app writes
+ * in the background, so a family made a moment ago may still be on its way and would overwrite this).
+ */
+export async function adminWrite(path, data, only) {
+  const enc = (v) => (v instanceof Date ? { timestampValue: v.toISOString() } : typeof v === 'number' ? { integerValue: String(v) } : { stringValue: String(v) });
+  const fields = Object.fromEntries(Object.entries(data).map(([k, v]) => [k, enc(v)]));
+  const mask = only ? `?${only.map((f) => `updateMask.fieldPaths=${f}`).join('&')}&currentDocument.exists=true` : '';
+  for (let i = 0; ; i++) {
+    const res = await fetch(`http://127.0.0.1:8080/v1/projects/demo-couponvault/databases/(default)/documents/${path}${mask}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer owner' },
+      body: JSON.stringify({ fields }),
+    });
+    if (res.ok) return;
+    if (!only || i >= 40) throw new Error(`adminWrite ${path}: ${res.status} ${await res.text()}`);
+    await new Promise((r) => setTimeout(r, 250)); // not on the server yet
+  }
 }

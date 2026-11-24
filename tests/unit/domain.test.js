@@ -6,7 +6,7 @@ import { couponCategories, resolveCategories, withFamilyCategories } from '@/dom
 import { isUrl, urlHost, displayStore, splitLinks } from '@/domain/links';
 import { brandDomain, brandDomainOf, logoUrl, logoSources, isOwnLogo, isWideLogo, BRAND_LIST, searchBrands } from '@/domain/brands';
 import { searchCoupons, groupByCategory } from '@/domain/homeList';
-import { normalizeInviteCode, familyCategories, membersOf, pickCurrentFamily, inviteMessage, alertDaysFor } from '@/domain/family';
+import { normalizeInviteCode, familyCategories, membersOf, pickCurrentFamily, inviteMessage, alertDaysFor, inviteExpiry, isInviteExpired } from '@/domain/family';
 import { NO_CATEGORY, DEFAULT_CATEGORIES } from '@/domain/constants';
 
 const NOW = new Date(2026, 10, 15, 12, 0);
@@ -265,7 +265,18 @@ describe('families', () => {
     expect(alertDaysFor({}, { alertDays: 30 })).toBe(30);
     expect(alertDaysFor({}, {})).toBe(14);
   });
-  it('invite codes are cleaned while typing', () => expect(normalizeInviteCode('ab-c1 23x')).toBe('ABC123'));
+  it('invite codes are cleaned while typing (8 characters at most)', () => expect(normalizeInviteCode('ab-c1 23x yz9')).toBe('ABC123XY'));
+  it('an invite code is valid for 7 days from when it was made', () => {
+    const made = new Date('2026-11-24T10:00:00Z');
+    const fam = { inviteCode: 'ABCD2345', inviteCreatedAt: { toDate: () => made } };
+    expect(inviteExpiry(fam).toISOString()).toBe('2026-12-01T10:00:00.000Z');
+    expect(isInviteExpired(fam, new Date('2026-11-30T10:00:00Z'))).toBe(false);
+    expect(isInviteExpired(fam, new Date('2026-12-01T10:00:01Z'))).toBe(true);
+    // a code from before codes had a date (6 characters) no longer works
+    expect(isInviteExpired({ inviteCode: 'ABC123' }, made)).toBe(true);
+    // just created: the server time isn't back yet, so it counts as fresh
+    expect(isInviteExpired({ inviteCode: 'ABCD2345', inviteCreatedAt: null }, made)).toBe(false);
+  });
   it('categories = defaults + custom, no duplicates', () => {
     const cats = familyCategories({ customCategories: ['דלק', 'אוכל', 'בית'] });
     expect(cats).toEqual(['כללי', 'אוכל', 'סופרמרקט', 'ביגוד', 'דלק', 'בית']); // the family's own names, as typed

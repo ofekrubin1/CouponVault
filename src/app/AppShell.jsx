@@ -3,7 +3,7 @@ import { Spinner } from '@/ui';
 import { familyCategories } from '@/domain/family';
 import { withFamilyCategories } from '@/domain/coupon';
 import { CouponDetailSheet, CouponFormSheet, useCouponActions, useCoupons } from '@/features/coupons';
-import { FamilyActions } from '@/features/families';
+import { FamilyActions, PendingJoin, useJoinRequests } from '@/features/families';
 import { HomePage } from '@/features/home/HomePage';
 import { ArchivePage } from '@/features/archive/ArchivePage';
 import { SettingsPage } from '@/features/settings/SettingsPage';
@@ -11,16 +11,19 @@ import { AppHeader } from './AppHeader';
 import { BottomNav } from './BottomNav';
 import { Fab } from './Fab';
 import { useCouponSheet } from './useCouponSheet';
+import { LockOffer } from '@/features/auth/AppLock';
 
 /** The signed-in app for one family: header, current tab, bottom bar, + button and coupon sheets. */
-export function AppShell({ user, family, families, ready, joinCode, alertDays }) {
+export function AppShell({ user, family, families, ready, joinCode, alertDays, pendingJoin }) {
   const categories = useMemo(() => familyCategories(family), [family]);
   const loaded = useCoupons(family.id, ready);
   const coupons = useMemo(() => loaded && withFamilyCategories(loaded, categories), [loaded, categories]);
   const actions = useCouponActions(family, user);
+  const requests = useJoinRequests(family.id);
   const sheets = useCouponSheet(coupons);
   const [tab, setTab] = useState('home');
-  const [pendingJoin, setPendingJoin] = useState(joinCode && !families.some((f) => f.inviteCode === joinCode) ? joinCode : '');
+  // an invite link opened while already in a family: offer to ask to join that one too
+  const [pendingInvite, setPendingInvite] = useState(joinCode && !families.some((f) => f.inviteCode === joinCode) ? joinCode : '');
 
   const stores = useMemo(() => [...new Set((coupons || []).map((c) => c.store).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'he')), [coupons]);
 
@@ -36,9 +39,11 @@ export function AppShell({ user, family, families, ready, joinCode, alertDays })
 
   let page;
   if (coupons === null) page = <Spinner className="flex justify-center py-20" />;
-  else if (tab === 'home') page = <HomePage coupons={coupons} categories={categories} alertDays={alertDays} onOpen={sheets.openDetail} onAdd={sheets.openNew} onDelete={actions.remove} />;
+  else if (tab === 'home') page = (
+      <HomePage coupons={coupons} categories={categories} alertDays={alertDays} requests={requests} onOpen={sheets.openDetail} onAdd={sheets.openNew} onDelete={actions.remove} onRequests={() => go('settings')} />
+    );
   else if (tab === 'archive') page = <ArchivePage coupons={coupons} alertDays={alertDays} onOpen={sheets.openDetail} />;
-  else page = <SettingsPage key={family.id} user={user} family={family} families={families} alertDays={alertDays} />;
+  else page = <SettingsPage key={family.id} user={user} family={family} families={families} alertDays={alertDays} requests={requests} />;
 
   return (
     <>
@@ -46,9 +51,14 @@ export function AppShell({ user, family, families, ready, joinCode, alertDays })
         <AppHeader tab={tab} user={user} family={family} families={families} onGo={go} />
         {pendingJoin && (
           <div className="mb-4">
+            <PendingJoin user={user} pending={pendingJoin} />
+          </div>
+        )}
+        {pendingInvite && (
+          <div className="mb-4">
             <p className="section-title mb-2">הוזמנת להצטרף למשפחה</p>
-            <FamilyActions user={user} families={families} initialCode={pendingJoin} onDone={() => setPendingJoin('')} />
-            <button type="button" className="mt-2 text-xs font-light text-mute/50" onClick={() => setPendingJoin('')}>
+            <FamilyActions user={user} families={families} initialCode={pendingInvite} onDone={() => setPendingInvite('')} />
+            <button type="button" className="mt-2 text-xs font-light text-mute/50" onClick={() => setPendingInvite('')}>
               לא עכשיו
             </button>
           </div>
@@ -57,7 +67,8 @@ export function AppShell({ user, family, families, ready, joinCode, alertDays })
       </div>
 
       {tab !== 'settings' && <Fab onClick={sheets.openNew} />}
-      <BottomNav tab={tab} onChange={go} />
+      <BottomNav tab={tab} onChange={go} badges={{ settings: requests.length }} />
+      <LockOffer user={user} />
 
       {sheets.sheet?.kind === 'detail' && sheets.current && (
         <CouponDetailSheet

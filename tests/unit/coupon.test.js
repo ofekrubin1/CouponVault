@@ -95,8 +95,8 @@ describe('sortByExpiry', () => {
 });
 
 describe('misc', () => {
-  it('invite codes are 6 unambiguous characters', () => {
-    for (let i = 0; i < 200; i++) expect(makeInviteCode()).toMatch(/^[A-HJ-NP-Z2-9]{6}$/);
+  it('invite codes are 8 unambiguous characters', () => {
+    for (let i = 0; i < 200; i++) expect(makeInviteCode()).toMatch(/^[A-HJ-NP-Z2-9]{8}$/);
   });
   it('formatDate accepts dates and timestamps', () => {
     expect(formatDate('2026-11-05')).toBe('05/11/2026');

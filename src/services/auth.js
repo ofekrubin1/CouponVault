@@ -1,6 +1,8 @@
 // Sign-in / sign-out. Screens use these instead of calling Firebase Auth directly.
 import { GoogleAuthProvider, onAuthStateChanged, signInWithCredential, signInWithPopup, signInWithRedirect, signOut as fbSignOut } from 'firebase/auth';
-import { auth, googleProvider, LOCAL } from './firebase';
+import { clearIndexedDbPersistence, terminate } from 'firebase/firestore';
+import { auth, db, googleProvider, LOCAL } from './firebase';
+import { forgetLock } from './deviceLock';
 
 /** The fictional user of the local test environment (the same one scripts/seed-local.mjs puts in the families). */
 export const LOCAL_TEST_USER = { sub: 'local-test-user', email: 'test@couponvault.local', name: 'משתמש בדיקה' };
@@ -27,4 +29,19 @@ export async function signInWithGoogle() {
   }
 }
 
-export const signOut = () => fbSignOut(auth);
+/**
+ * Sign out and leave nothing on this device: Firestore keeps an offline copy of the coupons (IndexedDB) so they
+ * open without signal; it's stopped and wiped here, then the page reloads with a clean slate.
+ */
+export async function signOut() {
+  const uid = auth.currentUser?.uid;
+  await fbSignOut(auth);
+  if (uid) forgetLock(uid);
+  try {
+    await terminate(db);
+    await clearIndexedDbPersistence(db);
+  } catch (e) {
+    console.error('[sign out] could not clear the offline copy', e); // e.g. the app is open in another tab
+  }
+  window.location.reload();
+}

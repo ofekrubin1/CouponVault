@@ -19,11 +19,20 @@ service cloud.firestore {
       allow read, write: if signedIn() && request.auth.uid == uid;
     }
 
-    // Invite code -> familyId. Anyone signed in can look up a code they know,
-    // but nobody can list all codes.
+    // An invite code is valid for 7 days from when it was made (server time).
+    function inviteValid(code, fid) {
+      let inv = get(/databases/$(db)/documents/invites/$(code)).data;
+      return inv.familyId == fid && 'createdAt' in inv
+        && request.time < inv.createdAt + duration.value(7, 'd');
+    }
+
+    // Invite code -> family. Anyone signed in can look up a code they know, nobody can list them.
+    // A new code is 8 characters and carries the real server time (so it can't be dated ahead).
     match /invites/{code} {
       allow get: if signedIn();
       allow create: if signedIn()
+        && code.size() == 8
+        && request.resource.data.createdAt == request.time
         && request.auth.uid in getAfter(familyPath(request.resource.data.familyId)).data.members;
       allow delete: if isMember(resource.data.familyId);
     }
@@ -34,19 +43,25 @@ service cloud.firestore {
       allow create: if signedIn()
         && request.resource.data.members == [request.auth.uid];
 
-      // Members may edit anything. A non-member may only add themselves,
-      // and only when they present a valid invite code for this family.
-      allow update: if signedIn() && (
-        request.auth.uid in resource.data.members || joining()
-      );
+      // Only members change a family; nobody adds themselves (a member approves a join request).
+      allow update: if signedIn() && request.auth.uid in resource.data.members;
 
       allow delete: if false;
 
-      function joining() {
-        return request.resource.data.members == resource.data.members.concat([request.auth.uid])
-          && request.resource.data.diff(resource.data).affectedKeys()
-               .hasOnly(['members', 'memberInfo', 'lastJoinCode'])
-          && get(/databases/$(db)/documents/invites/$(request.resource.data.lastJoinCode)).data.familyId == fid;
+      // Asking to join: only for yourself, with a valid code, as "pending". The asker sees and can withdraw
+      // their own request; members see them all and may only set the status (approved / declined).
+      match /requests/{uid} {
+        allow create: if signedIn() && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(['name', 'email', 'photo', 'code', 'status', 'createdAt'])
+          && request.resource.data.status == 'pending'
+          && request.resource.data.createdAt == request.time
+          && inviteValid(request.resource.data.code, fid);
+        allow get: if signedIn() && (request.auth.uid == uid || isMember(fid));
+        allow list: if isMember(fid);
+        allow update: if isMember(fid)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+          && request.resource.data.status in ['approved', 'declined'];
+        allow delete: if signedIn() && (request.auth.uid == uid || isMember(fid));
       }
 
       match /coupons/{cid} {

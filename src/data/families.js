@@ -1,13 +1,15 @@
 // Families, membership and invite codes.
-import { arrayRemove, arrayUnion, collection, deleteField, doc, getDocFromServer, query, serverTimestamp, updateDoc, where, writeBatch } from 'firebase/firestore';
+import { arrayRemove, arrayUnion, collection, deleteDoc, deleteField, doc, getDocFromServer, query, serverTimestamp, setDoc, updateDoc, where, writeBatch } from 'firebase/firestore';
 import { db } from '@/services/firebase';
-import { DEFAULT_ALERT_DAYS, INVITE_CODE_LENGTH } from '@/domain/constants';
+import { DEFAULT_ALERT_DAYS, INVITE_CODE_LENGTH, INVITE_VALID_DAYS } from '@/domain/constants';
 import { makeInviteCode, memberInfoOf } from '@/domain/family';
 import { background, liveSnapshot, withTimeout } from './sync';
-import { setCurrentFamily } from './users';
+import { setCurrentFamily, setPendingJoin } from './users';
 
 const familyDoc = (id) => doc(db, 'families', id);
 const inviteDoc = (code) => doc(db, 'invites', code);
+const requestDoc = (familyId, uid) => doc(db, 'families', familyId, 'requests', uid);
+const requestsCol = (familyId) => collection(db, 'families', familyId, 'requests');
 
 /**
  * My families. `synced` is false while a family exists only on this phone (just created, not yet confirmed
@@ -38,12 +40,13 @@ export function createFamily(user, name) {
     members: [user.uid],
     memberInfo: { [user.uid]: memberInfoOf(user) },
     inviteCode: code,
+    inviteCreatedAt: serverTimestamp(),
     alertDays: DEFAULT_ALERT_DAYS,
     customCategories: [],
     createdBy: user.uid,
     createdAt: serverTimestamp(),
   });
-  batch.set(inviteDoc(code), { familyId: ref.id });
+  batch.set(inviteDoc(code), { familyId: ref.id, familyName: name.trim(), createdAt: serverTimestamp() });
   background(batch.commit(), 'create family');
   setCurrentFamily(user.uid, ref.id);
   return ref.id;
@@ -66,16 +69,14 @@ async function readFromServer(ref, attempts = 3) {
   throw last;
 }
 
-const JOIN_CONFIRM_MS = 30000;
-
 /**
- * Join a family with an invite code. Resolves { id, name } once the server has really added us, or throws an
- * Error with a Hebrew message. Doesn't depend on the families listener (which can lag on a cold start); it
- * asks the server directly: as soon as we're a member we're allowed to read the family.
+ * Ask to join a family with an invite code. A member has to approve (firestore.rules lets nobody add themselves).
+ * Resolves { id, name, already } once the request is on the server (already: you're a member anyway), or throws
+ * an Error with a Hebrew message.
  */
-export async function joinFamily(user, rawCode) {
+export async function requestToJoin(user, rawCode) {
   const code = rawCode.trim().toUpperCase();
-  if (code.length !== INVITE_CODE_LENGTH) throw new Error('קוד הזמנה הוא 6 תווים');
+  if (code.length !== INVITE_CODE_LENGTH) throw new Error(`קוד הזמנה הוא ${INVITE_CODE_LENGTH} תווים`);
 
   let inv;
   try {
@@ -84,40 +85,53 @@ export async function joinFamily(user, rawCode) {
     throw new Error('אין חיבור לאינטרנט. נסה שוב');
   }
   if (!inv.exists()) throw new Error('הקוד לא נמצא. בדוק שהקלדת נכון');
-  const { familyId } = inv.data();
-  const ref = familyDoc(familyId);
+  const { familyId, familyName = '', createdAt } = inv.data();
+  if (!createdAt || Date.now() > createdAt.toMillis() + INVITE_VALID_DAYS * 864e5) throw new Error('הקוד כבר לא בתוקף. בקש קוד חדש');
 
-  // Already a member (e.g. a second tap)? Then there's nothing to write.
+  // Already a member (e.g. a second tap)? Then there's nothing to ask.
   try {
-    const mine = await withTimeout(getDocFromServer(ref), 8000);
-    if (mine.exists()) return { id: familyId, name: mine.data().name };
+    const mine = await withTimeout(getDocFromServer(familyDoc(familyId)), 8000);
+    if (mine.exists()) return { id: familyId, name: mine.data().name, already: true };
   } catch {
-    /* not a member yet (permission denied) or slow: go on and join */
+    /* not a member (permission denied) or slow: ask */
   }
 
-  // A non-member can't read the family, so the update is built blindly; the rules check that it only
-  // appends us and that the code is valid.
-  let rejected = null;
-  updateDoc(ref, { members: arrayUnion(user.uid), [`memberInfo.${user.uid}`]: memberInfoOf(user), lastJoinCode: code }).catch((e) => {
-    rejected = e;
-  });
-
-  const deadline = Date.now() + JOIN_CONFIRM_MS;
-  while (Date.now() < deadline) {
-    if (rejected) {
-      console.error('[join family]', rejected);
-      throw new Error(rejected.code === 'permission-denied' ? 'הקוד כבר לא בתוקף. בקש קוד חדש' : 'ההצטרפות נכשלה. נסה שוב');
-    }
-    try {
-      const snap = await withTimeout(getDocFromServer(ref), 8000);
-      if (snap.exists()) return { id: familyId, name: snap.data().name };
-    } catch {
-      /* not accepted yet: keep checking */
-    }
-    await sleep(700);
+  try {
+    await withTimeout(
+      setDoc(requestDoc(familyId, user.uid), { ...memberInfoOf(user), code, status: 'pending', createdAt: serverTimestamp() }),
+      15000,
+    );
+  } catch (e) {
+    console.error('[join request]', e);
+    throw new Error(e?.code === 'permission-denied' ? 'הקוד כבר לא בתוקף. בקש קוד חדש' : 'שליחת הבקשה נכשלה. נסה שוב');
   }
-  throw new Error('החיבור איטי. ההצטרפות תושלם לבד כשהחיבור ישתפר');
+  setPendingJoin(user.uid, { familyId, familyName, at: new Date().toISOString() });
+  return { id: familyId, name: familyName, already: false };
 }
+
+/** My own request (to show "waiting" / "approved" / "declined"); cb(null) when there is none. */
+export const watchMyRequest = (familyId, uid, cb) =>
+  liveSnapshot(requestDoc(familyId, uid), {}, (s) => cb(s.exists() ? s.data() : null), () => cb(null));
+
+/** Withdraw my request (or clear it once it's been answered). */
+export function clearMyRequest(familyId, uid) {
+  background(deleteDoc(requestDoc(familyId, uid)), 'clear join request');
+  setPendingJoin(uid, null);
+}
+
+/** Pending join requests of a family (members only). */
+export const watchJoinRequests = (familyId, cb) =>
+  liveSnapshot(query(requestsCol(familyId), where('status', '==', 'pending')), {}, (snap) => cb(snap.docs.map((d) => ({ uid: d.id, ...d.data() }))), () => cb([]));
+
+/** A member lets them in: added to the family, and their request marked approved (they see it and clean up). */
+export function approveRequest(familyId, req) {
+  const batch = writeBatch(db);
+  batch.update(familyDoc(familyId), { members: arrayUnion(req.uid), [`memberInfo.${req.uid}`]: { name: req.name || 'משתמש', email: req.email || '', photo: req.photo || '' } });
+  batch.update(requestDoc(familyId, req.uid), { status: 'approved' });
+  background(batch.commit(), 'approve join request');
+}
+
+export const declineRequest = (familyId, uid) => background(updateDoc(requestDoc(familyId, uid), { status: 'declined' }), 'decline join request');
 
 export const updateFamily = (familyId, data) => background(updateDoc(familyDoc(familyId), data), 'update family');
 
@@ -128,9 +142,9 @@ export const removeCategory = (familyId, name) => updateFamily(familyId, { custo
 export function regenerateInvite(family) {
   const code = makeInviteCode();
   const batch = writeBatch(db);
-  batch.set(inviteDoc(code), { familyId: family.id });
+  batch.set(inviteDoc(code), { familyId: family.id, familyName: family.name, createdAt: serverTimestamp() });
   if (family.inviteCode) batch.delete(inviteDoc(family.inviteCode));
-  batch.update(familyDoc(family.id), { inviteCode: code });
+  batch.update(familyDoc(family.id), { inviteCode: code, inviteCreatedAt: serverTimestamp() });
   background(batch.commit(), 'regenerate invite');
   return code;
 }

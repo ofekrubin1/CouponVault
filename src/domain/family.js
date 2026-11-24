@@ -1,5 +1,5 @@
 // Families and invites. Pure functions.
-import { DEFAULT_ALERT_DAYS, DEFAULT_CATEGORIES, INVITE_CODE_LENGTH } from './constants';
+import { DEFAULT_ALERT_DAYS, DEFAULT_CATEGORIES, INVITE_CODE_LENGTH, INVITE_VALID_DAYS } from './constants';
 
 const INVITE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O/1/I
 
@@ -11,6 +11,22 @@ export function makeInviteCode() {
 
 /** What a user typed → a clean code (upper case, letters/digits only). */
 export const normalizeInviteCode = (raw) => raw.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, INVITE_CODE_LENGTH);
+
+const toDate = (t) => (t && typeof t.toDate === 'function' ? t.toDate() : t ? new Date(t) : null);
+
+/** When the family's invite code stops working (null while a just-made code waits for the server's time). */
+export function inviteExpiry(family) {
+  const made = toDate(family.inviteCreatedAt);
+  return made ? new Date(made.getTime() + INVITE_VALID_DAYS * 864e5) : null;
+}
+
+/** True once the code no longer works: 7 days old, or a code from before codes had a date (6 characters). */
+export function isInviteExpired(family, now = new Date()) {
+  if ((family.inviteCode || '').length !== INVITE_CODE_LENGTH) return true;
+  const until = inviteExpiry(family);
+  if (until) return now > until;
+  return family.inviteCreatedAt !== null; // null: just made, the server's time is on its way; missing: an undated code
+}
 
 export const joinLink = (origin, code) => `${origin}/?join=${code}`;
 

@@ -4,6 +4,7 @@ import { setErrorReporter } from '@/data';
 import { watchAuth } from '@/services/auth';
 import { LOCAL } from '@/services/firebase';
 import { LoginPage } from '@/features/auth/LoginPage';
+import { LockGate } from '@/features/auth/AppLock';
 import { OnboardingPage, useFamilies } from '@/features/families';
 import { AppShell } from './AppShell';
 import { clearJoinLink, readJoinLink } from './joinLink';
@@ -48,18 +49,22 @@ function AuthGate() {
   useEffect(() => watchAuth(setUser), []);
   if (user === undefined) return <Spinner full />;
   if (!user) return <LoginPage />;
-  return <SignedIn key={user.uid} user={user} />;
+  return (
+    <LockGate key={user.uid} user={user}>
+      <SignedIn user={user} />
+    </LockGate>
+  );
 }
 
 /** Loads the user's families: none → welcome screen; otherwise the app for the selected family. */
 function SignedIn({ user }) {
   const [joinCode] = useState(joinCodeAtStart);
-  const { loading, families, family, ready, alertDays } = useFamilies(user.uid);
+  const { loading, families, family, ready, alertDays, pendingJoin } = useFamilies(user.uid);
   useEffect(() => {
     if (joinCode) clearJoinLink();
   }, [joinCode]);
 
   if (loading) return <Spinner full />;
-  if (!family) return <OnboardingPage user={user} joinCode={joinCode} />;
-  return <AppShell key={family.id} user={user} family={family} families={families} ready={ready} joinCode={joinCode} alertDays={alertDays} />;
+  if (!family) return <OnboardingPage user={user} joinCode={joinCode} pendingJoin={pendingJoin} />;
+  return <AppShell key={family.id} user={user} family={family} families={families} ready={ready} joinCode={joinCode} alertDays={alertDays} pendingJoin={pendingJoin} />;
 }

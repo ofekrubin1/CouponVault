@@ -1,11 +1,53 @@
-import { Users } from 'lucide-react';
+import { Users, Check, X } from 'lucide-react';
 import { Avatar, Card, useConfirm, useToast } from '@/ui';
-import { removeMember, setCurrentFamily } from '@/data';
+import { approveRequest, declineRequest, removeMember, setCurrentFamily } from '@/data';
 import { membersOf } from '@/domain/family';
 import { Count, SectionTitle } from '../SectionTitle';
 
-/** Members list (remove others) and leaving the family. */
-export function MembersSection({ user, family, families }) {
+/** People who asked to join with the code: any member lets them in or declines. */
+function JoinRequests({ family, requests }) {
+  const toast = useToast();
+  if (!requests.length) return null;
+  return (
+    <div className="mb-3 rounded-[14px] border border-gold/40 bg-gold/[0.07] p-3" data-testid="join-requests">
+      <p className="mb-2 text-xs font-semibold text-gold-deep">בקשות הצטרפות</p>
+      <ul className="space-y-2">
+        {requests.map((r) => (
+          <li key={r.uid} className="flex items-center gap-2.5" data-testid="join-request" data-name={r.name}>
+            <Avatar name={r.name} photo={r.photo} size={34} />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-ink">{r.name || 'משתמש'}</p>
+              <p className="truncate text-[11px] font-light text-mute/50" dir="ltr">
+                {r.email}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                approveRequest(family.id, r);
+                toast(`${r.name || 'המשתמש'} צורף/ה למשפחה`);
+              }}
+              className="flex items-center gap-1 rounded-[10px] bg-gradient-to-b from-gold to-gold-dark px-3 py-1.5 text-xs font-semibold text-white shadow-goldbtn"
+            >
+              <Check className="h-3.5 w-3.5" strokeWidth={2.4} /> אישור
+            </button>
+            <button
+              type="button"
+              onClick={() => declineRequest(family.id, r.uid)}
+              aria-label={`דחיית ${r.name || 'הבקשה'}`}
+              className="rounded-[10px] border border-white/80 bg-white/70 p-1.5 text-mute/60"
+            >
+              <X className="h-4 w-4" strokeWidth={2} />
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/** Join requests, the members list (remove others) and leaving the family. */
+export function MembersSection({ user, family, families, requests = [] }) {
   const toast = useToast();
   const confirm = useConfirm();
   const members = membersOf(family);
@@ -37,6 +79,7 @@ export function MembersSection({ user, family, families }) {
       <SectionTitle icon={Users} aside={<Count n={members.length} />}>
         חברים
       </SectionTitle>
+      <JoinRequests family={family} requests={requests} />
       <ul className="divide-y divide-navy/[0.05]" data-testid="members">
         {members.map((m) => (
           <li key={m.uid} className="flex items-center gap-3 py-2.5">

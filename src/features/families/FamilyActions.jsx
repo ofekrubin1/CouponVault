@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Plus, LogIn, Users } from 'lucide-react';
-import { createFamily, joinFamily, setCurrentFamily } from '@/data';
+import { createFamily, requestToJoin, setCurrentFamily } from '@/data';
 import { Button, Card, Field, IconTile, Input, cx, useToast } from '@/ui';
 import { normalizeInviteCode } from '@/domain/family';
 
@@ -39,9 +39,13 @@ export function FamilyActions({ user, families = [], initialCode = '', compact =
     }
     setBusy(true);
     try {
-      const joined = await joinFamily(user, clean);
-      toast(`הצטרפת ל"${joined.name}" 🎉`);
-      setCurrentFamily(user.uid, joined.id);
+      const r = await requestToJoin(user, clean);
+      if (r.already) {
+        toast('אתה כבר חבר במשפחה הזו');
+        setCurrentFamily(user.uid, r.id);
+      } else {
+        toast('הבקשה נשלחה. ממתינים לאישור');
+      }
       onDone?.();
       if (!alive.current) return;
       setMode(null);
@@ -81,26 +85,26 @@ export function FamilyActions({ user, families = [], initialCode = '', compact =
           <Input id="family-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="למשל: משפחת רובין" autoFocus error={err} onKeyDown={(e) => e.key === 'Enter' && submit()} />
         </Field>
       ) : (
-        <Field id="invite-code" label="קוד הזמנה" error={err} hint="את הקוד מקבלים מחבר במשפחה (בהגדרות שלו)">
+        <Field id="invite-code" label="קוד הזמנה" error={err} hint="את הקוד מקבלים מחבר במשפחה (בהגדרות שלו). אחרי השליחה, חבר במשפחה צריך לאשר אותך.">
           <Input
             id="invite-code"
             dir="ltr"
-            maxLength={6}
+            maxLength={8}
             value={code}
             onChange={(e) => { setCode(normalizeInviteCode(e.target.value)); setErr(''); }}
-            placeholder="ABC123"
+            placeholder="ABCD2345"
             autoFocus
             autoCapitalize="characters"
             autoComplete="off"
             error={err}
-            className="text-center font-mono text-xl font-semibold tracking-[0.4em]"
+            className="text-center font-mono text-xl font-semibold tracking-[0.25em]"
             onKeyDown={(e) => e.key === 'Enter' && submit()}
           />
         </Field>
       )}
       <div className="flex gap-2">
         <Button variant="primary" className="flex-1" onClick={submit} disabled={busy}>
-          {busy ? 'מצטרף…' : mode === 'create' ? 'צור משפחה' : 'הצטרף'}
+          {busy ? 'שולח…' : mode === 'create' ? 'צור משפחה' : 'בקשת הצטרפות'}
         </Button>
         <Button variant="soft" onClick={() => { setMode(null); setErr(''); }}>
           ביטול

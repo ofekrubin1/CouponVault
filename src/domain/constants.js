@@ -40,4 +40,6 @@ export const couponTypeLabel = (key) => COUPON_TYPES.find((t) => t.key === key)?
 export const DEFAULT_ALERT_DAYS = 14;
 export const ALERT_DAY_OPTIONS = [7, 14, 30, 60];
 
-export const INVITE_CODE_LENGTH = 6;
+export const INVITE_CODE_LENGTH = 8;
+/** An invite code works for this many days from when it was made (enforced by firestore.rules). */
+export const INVITE_VALID_DAYS = 7;

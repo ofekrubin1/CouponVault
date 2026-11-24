@@ -13,3 +13,7 @@ export const setMyAlertDays = (uid, days) =>
 
 export const setCurrentFamily = (uid, familyId) =>
   background(setDoc(userDoc(uid), { currentFamilyId: familyId }, { merge: true }), 'set current family');
+
+/** The family I asked to join and am waiting for (null when none). One at a time. */
+export const setPendingJoin = (uid, pending) =>
+  background(setDoc(userDoc(uid), { pendingJoin: pending }, { merge: true }), 'set pending join');

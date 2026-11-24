@@ -14,6 +14,7 @@ const USERS = {
   me: { sub: 'local-test-user', email: 'test@couponvault.local', name: 'משתמש בדיקה' },
   dana: { sub: 'local-dana', email: 'dana@couponvault.local', name: 'דנה בדיקה' },
   yossi: { sub: 'local-yossi', email: 'yossi@couponvault.local', name: 'יוסי בדיקה' },
+  ronit: { sub: 'local-ronit', email: 'ronit@couponvault.local', name: 'רונית בדיקה' }, // asks to join (see below)
 };
 
 async function call(url, init) {
@@ -71,8 +72,8 @@ export async function seedLocal() {
   const now = new Date();
 
   const families = [
-    { id: 'fam-test', name: 'משפחת בדיקה', members: ['me', 'dana', 'yossi'], code: 'BDK234', custom: ['בית'] },
-    { id: 'fam-friends', name: 'חברים לבדיקה', members: ['me', 'yossi'], code: 'FRN567' },
+    { id: 'fam-test', name: 'משפחת בדיקה', members: ['me', 'dana', 'yossi'], code: 'BDKTEST2', custom: ['בית'] },
+    { id: 'fam-friends', name: 'חברים לבדיקה', members: ['me', 'yossi'], code: 'FRNTEST3' },
   ];
   for (const f of families) {
     await put(`families/${f.id}`, {
@@ -80,14 +81,18 @@ export async function seedLocal() {
       members: f.members.map((k) => uid[k]),
       memberInfo: Object.fromEntries(f.members.map((k) => [uid[k], info(k)])),
       inviteCode: f.code,
+      inviteCreatedAt: now,
       alertDays: 14,
       customCategories: f.custom || [],
       createdBy: uid.me,
       createdAt: now,
     });
-    await put(`invites/${f.code}`, { familyId: f.id });
+    await put(`invites/${f.code}`, { familyId: f.id, familyName: f.name, createdAt: now });
   }
   await put(`users/${uid.me}`, { currentFamilyId: 'fam-test' });
+  // a fictional person waiting for a member to let them in (Settings → חברים, and the banner on home)
+  await put(`families/fam-test/requests/${uid.ronit}`, { ...info('ronit'), code: 'BDKTEST2', status: 'pending', createdAt: now });
+  await put(`users/${uid.ronit}`, { pendingJoin: { familyId: 'fam-test', familyName: 'משפחת בדיקה', at: now.toISOString() } });
 
   const coupon = (c, by = 'me') => {
     const categories = c.categories || [c.category];

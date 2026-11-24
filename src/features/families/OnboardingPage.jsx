@@ -3,8 +3,9 @@ import { signOut } from '@/services/auth';
 import { Card, PageHeader } from '@/ui';
 import { firstName } from '@/domain/format';
 import { FamilyActions } from './FamilyActions';
+import { PendingJoin } from './PendingJoin';
 
-export function OnboardingPage({ user, joinCode }) {
+export function OnboardingPage({ user, joinCode, pendingJoin }) {
   return (
     <div className="mx-auto min-h-[100dvh] max-w-lg space-y-4 px-5 pb-10 pt-14">
       <PageHeader eyebrow="ברוך הבא" title={`שלום ${firstName(user.displayName)} 👋`} />
@@ -23,8 +24,14 @@ export function OnboardingPage({ user, joinCode }) {
         </div>
       </Card>
 
-      <p className="section-title pt-2">להתחיל</p>
-      <FamilyActions user={user} initialCode={joinCode} />
+      {pendingJoin ? (
+        <PendingJoin user={user} pending={pendingJoin} />
+      ) : (
+        <>
+          <p className="section-title pt-2">להתחיל</p>
+          <FamilyActions user={user} initialCode={joinCode} />
+        </>
+      )}
 
       <button type="button" className="mx-auto flex items-center gap-1.5 pt-6 text-xs font-light text-mute/50" onClick={signOut}>
         <LogOut className="h-3.5 w-3.5" strokeWidth={1.5} /> התנתקות ({user.email})

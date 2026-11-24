@@ -15,7 +15,7 @@ test('T28 coupons about to expire are flagged in their row (red within 3 days, a
   await expect(expiry('עוד עשרה')).toHaveAttribute('data-urgency', 'gold');
   await expect(expiry('עוד חודשיים')).not.toHaveAttribute('data-urgency', /./);
   await expect(expiry('בלי תוקף')).toHaveText('ללא תוקף');
-  await expect(page.getByTestId('summary-expiring')).toHaveText('2 פגים בקרוב');
+  await expect(page.getByTestId('summary-expiring')).toHaveText('2');
   // tapping a row opens the coupon
   await ticket(page, 'עוד יומיים').click();
   await expect(sheet(page, 'עוד יומיים')).toBeVisible();
@@ -99,11 +99,11 @@ test('T32 expired coupons leave the home screen and wait in the archive', async 
 test('T33 the alert-days setting widens the "about to expire" window', async ({ page }) => {
   const { familyId } = await setup(page);
   await seed(page, familyId, [{ title: 'בעוד 20 יום', store: 'x', type: 'other', expiry: isoIn(20) }]);
-  await expect(page.getByTestId('summary-expiring')).toHaveCount(0);
+  await expect(page.getByTestId('expiring-filter')).toBeDisabled(); // none inside 14 days
   await tab(page, 'הגדרות');
   await page.getByRole('radio', { name: '30 ימים' }).click();
   await tab(page, 'קופונים');
-  await expect(page.getByTestId('summary-expiring')).toHaveText('1 פגים בקרוב');
+  await expect(page.getByTestId('summary-expiring')).toHaveText('1');
   await expect(ticket(page, 'בעוד 20 יום').getByTestId('row-expiry')).toHaveAttribute('data-urgency', 'gold');
 });
 
@@ -154,7 +154,7 @@ test('T72 inside the alert window a row always shows the days left, even past 30
   await expect(s.getByTestId('coupon-hero')).toContainText('עוד 37 ימים');
 });
 
-test('T73 tapping "N פגים בקרוב" shows only the coupons about to expire; tapping again shows all', async ({ page }) => {
+test('T73 the "פגים בקרוב" toggle beside the search shows only coupons about to expire; it steps aside while typing', async ({ page }) => {
   const { familyId } = await setup(page);
   await seed(page, familyId, [
     { title: 'דחוף', store: 'a', category: 'אוכל', type: 'other', expiry: isoIn(3) },
@@ -163,19 +163,37 @@ test('T73 tapping "N פגים בקרוב" shows only the coupons about to expire
     { title: 'בלי תוקף', store: 'd', type: 'other' },
   ]);
   const list = page.getByTestId('coupon-list').getByTestId('coupon-ticket');
-  const chip = page.getByTestId('expiring-filter');
+  const toggle = page.getByTestId('expiring-filter');
+  const search = page.getByRole('searchbox', { name: 'חיפוש' });
   await expect(list).toHaveCount(4);
-  await expect(chip).toHaveText(/2 פגים בקרוב/);
-  await expect(chip).toHaveAttribute('aria-pressed', 'false');
-  await chip.click();
-  await expect(chip).toHaveAttribute('aria-pressed', 'true');
+  await expect(toggle).toHaveText(/פגים בקרוב\s*2/);
+  // on the left of the search, on the same row, and small
+  const [t, s] = [await toggle.boundingBox(), await search.boundingBox()];
+  expect(t.x + t.width).toBeLessThanOrEqual(s.x + 1);
+  expect(Math.abs(t.y + t.height / 2 - (s.y + s.height / 2))).toBeLessThan(3);
+  expect(t.width).toBeLessThan(130); // narrower than the 136px version the user saw
+  // on: only the two about to expire, still by category
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-pressed', 'true');
   await expect(list).toHaveCount(2);
   expect(await list.evaluateAll((els) => els.map((e) => e.dataset.title))).toEqual(['דחוף', 'גם דחוף']);
-  // search works inside it
-  await page.getByRole('searchbox', { name: 'חיפוש' }).fill('גם');
+  // beside the toggle the placeholder is one word (no cut-off text)
+  await expect(search).toHaveAttribute('placeholder', 'חיפוש');
+  // typing: the toggle steps aside, the search takes the whole row and searches inside the filter
+  await search.click();
+  await expect(toggle).toHaveCount(0);
+  const wide = await search.boundingBox();
+  expect(wide.width).toBeGreaterThan(s.width + 60);
+  await expect(search).toHaveAttribute('placeholder', 'חיפוש בפגים בקרוב…');
+  await search.fill('גם');
   await expect(list).toHaveCount(1);
   await page.getByRole('button', { name: 'נקה חיפוש' }).click();
-  await chip.click();
-  await expect(chip).toHaveAttribute('aria-pressed', 'false');
+  await expect(search).toBeFocused(); // clearing keeps the keyboard
+  await expect(list).toHaveCount(2);
+  // keyboard closed: the toggle is back; off shows everything
+  await search.blur();
+  await expect(toggle).toBeVisible();
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
   await expect(list).toHaveCount(4);
 });
