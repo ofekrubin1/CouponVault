@@ -1,14 +1,15 @@
 import { useState } from 'react';
-import { Check, SlidersHorizontal } from 'lucide-react';
+import { Check, SlidersHorizontal, X } from 'lucide-react';
 import { Button, Sheet, cx } from '@/ui';
 import { CategoryIcon, categoryLabel, categoryStyle } from '@/features/coupons';
 
 /**
  * Filter button beside the search. Opens a short sheet (it covers only the bottom of the screen) with the
  * categories that have coupons as small tiles (icon and name), 4 to a row; any number can be chosen and the list behind updates
- * at once. Highlighted with the number chosen while a filter is on.
+ * at once. While a filter is on it's highlighted with the number chosen, and a small ✕ in its corner resets all
+ * the filters (`onReset`) without opening the sheet.
  */
-export function CategoryFilter({ counts, chosen, onChange, shownCount }) {
+export function CategoryFilter({ counts, chosen, onChange, shownCount, onReset }) {
   const [open, setOpen] = useState(false);
   const on = chosen.size > 0;
   const toggle = (key) => {
@@ -19,7 +20,7 @@ export function CategoryFilter({ counts, chosen, onChange, shownCount }) {
   };
 
   return (
-    <>
+    <div className="relative shrink-0">
       <button
         type="button"
         onClick={() => setOpen(true)}
@@ -27,17 +28,21 @@ export function CategoryFilter({ counts, chosen, onChange, shownCount }) {
         data-testid="category-filter"
         data-active={on || undefined}
         className={cx(
-          'relative flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-[12px] border transition-colors active:scale-[0.97]',
+          'flex h-[46px] min-w-[46px] items-center justify-center gap-1 rounded-[12px] border px-2.5 transition-colors active:scale-[0.97]',
           on ? 'border-accent bg-accent text-white' : 'border-white/80 bg-white/70 text-navy/55 shadow-btn2',
         )}
       >
         <SlidersHorizontal className="h-[18px] w-[18px]" strokeWidth={1.75} />
-        {on && (
-          <span className="absolute -left-1.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-white bg-navy px-1 text-[10px] font-bold text-white">
-            {chosen.size}
-          </span>
-        )}
+        {on && <span className="text-[13px] font-bold">{chosen.size}</span>}
       </button>
+      {on && (
+        // a small ✕ in the corner (with a finger-sized tap area around it): reset every filter at once
+        <button type="button" onClick={onReset} aria-label="איפוס הסינון" data-testid="filter-reset" className="absolute -left-2.5 -top-2.5 flex h-7 w-7 items-center justify-center">
+          <span className="flex h-[18px] w-[18px] items-center justify-center rounded-full border-2 border-white bg-navy text-white shadow">
+            <X className="h-2.5 w-2.5" strokeWidth={3.2} />
+          </span>
+        </button>
+      )}
       {open && (
         <Sheet
           title="סינון לפי קטגוריה"
@@ -82,6 +87,6 @@ export function CategoryFilter({ counts, chosen, onChange, shownCount }) {
           </div>
         </Sheet>
       )}
-    </>
+    </div>
   );
 }

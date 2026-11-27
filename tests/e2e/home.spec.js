@@ -246,7 +246,18 @@ test('T90 a filter button between the search and "פגים בקרוב" filters b
   await soon.click();
   await expect(list).toHaveCount(1);
   await expect(list.first()).toHaveAttribute('data-title', 'סושי דחוף');
-  await soon.click();
+  // the small ✕ on the filter button resets everything at once, without opening the sheet
+  await page.getByTestId('filter-reset').click();
+  await expect(list).toHaveCount(5);
+  await expect(sheetEl).toHaveCount(0);
+  await expect(filter).not.toHaveAttribute('data-active', 'true');
+  await expect(soon).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.getByTestId('filter-reset')).toHaveCount(0);
+  // choose again for the rest of the test
+  await filter.click();
+  await menu.locator('[data-category="אוכל"]').click();
+  await menu.locator('[data-category="ללא קטגוריה"]').click();
+  await sheetEl.getByRole('button', { name: 'הצג 3 קופונים' }).click();
 
   // typing: both buttons step aside, the search takes the whole row
   await search.click();

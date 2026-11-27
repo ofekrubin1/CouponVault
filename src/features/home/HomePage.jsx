@@ -124,7 +124,16 @@ export function HomePage({ coupons, categories, alertDays, requests = [], onOpen
         </div>
         {!searching && (
           <>
-            <CategoryFilter counts={view.categoryCounts} chosen={view.cats} onChange={setCats} shownCount={view.shownCount} />
+            <CategoryFilter
+              counts={view.categoryCounts}
+              chosen={view.cats}
+              onChange={setCats}
+              shownCount={view.shownCount}
+              onReset={() => {
+                setCats(new Set());
+                setSoonOnly(false);
+              }}
+            />
             <ExpiringToggle count={view.summary.expiringCount} on={view.soon} onToggle={() => setSoonOnly(!view.soon)} />
           </>
         )}
