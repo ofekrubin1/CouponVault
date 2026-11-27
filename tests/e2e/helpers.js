@@ -136,7 +136,12 @@ export async function noHorizontalOverflow(page) {
  * in the background, so a family made a moment ago may still be on its way and would overwrite this).
  */
 export async function adminWrite(path, data, only) {
-  const enc = (v) => (v instanceof Date ? { timestampValue: v.toISOString() } : typeof v === 'number' ? { integerValue: String(v) } : { stringValue: String(v) });
+  const enc = (v) =>
+    v instanceof Date ? { timestampValue: v.toISOString() }
+      : v instanceof Uint8Array ? { bytesValue: Buffer.from(v).toString('base64') }
+      : typeof v === 'boolean' ? { booleanValue: v }
+      : typeof v === 'number' ? { integerValue: String(v) }
+      : { stringValue: String(v) };
   const fields = Object.fromEntries(Object.entries(data).map(([k, v]) => [k, enc(v)]));
   const mask = only ? `?${only.map((f) => `updateMask.fieldPaths=${f}`).join('&')}&currentDocument.exists=true` : '';
   for (let i = 0; ; i++) {
@@ -149,4 +154,12 @@ export async function adminWrite(path, data, only) {
     if (!only || i >= 40) throw new Error(`adminWrite ${path}: ${res.status} ${await res.text()}`);
     await new Promise((r) => setTimeout(r, 250)); // not on the server yet
   }
+}
+
+/** A document as the server has it (the emulator's admin view): its plain field values, or null. */
+export async function adminRead(path) {
+  const res = await fetch(`http://127.0.0.1:8080/v1/projects/demo-couponvault/databases/(default)/documents/${path}`, { headers: { Authorization: 'Bearer owner' } });
+  if (res.status === 404) return null;
+  const { fields = {} } = await res.json();
+  return Object.fromEntries(Object.entries(fields).map(([k, v]) => [k, Object.values(v)[0]]));
 }

@@ -12,6 +12,7 @@ import { BottomNav } from './BottomNav';
 import { Fab } from './Fab';
 import { useCouponSheet } from './useCouponSheet';
 import { LockOffer } from '@/features/auth/AppLock';
+import { usePhotoPrefetch } from '@/features/coupons/photo/usePhotoPrefetch';
 
 /** The signed-in app for one family: header, current tab, bottom bar, + button and coupon sheets. */
 export function AppShell({ user, family, families, ready, joinCode, alertDays, pendingJoin }) {
@@ -20,6 +21,7 @@ export function AppShell({ user, family, families, ready, joinCode, alertDays, p
   const coupons = useMemo(() => loaded && withFamilyCategories(loaded, categories), [loaded, categories]);
   const actions = useCouponActions(family, user);
   const requests = useJoinRequests(family.id);
+  usePhotoPrefetch(family.id, coupons);
   const sheets = useCouponSheet(coupons);
   const [tab, setTab] = useState('home');
   // an invite link opened while already in a family: offer to ask to join that one too

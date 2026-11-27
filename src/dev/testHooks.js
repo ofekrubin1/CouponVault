@@ -1,6 +1,6 @@
 // Test-only helpers (loaded only in `vite --mode emulator`): sign in without the Google popup and seed data.
 import { GoogleAuthProvider, signInWithCredential, signOut, updateProfile } from 'firebase/auth';
-import { doc, collection, setDoc, getDocs } from 'firebase/firestore';
+import { doc, collection, setDoc, getDocs, getDocFromCache } from 'firebase/firestore';
 import { auth, db } from '@/services/firebase';
 import * as data from '@/data';
 
@@ -25,6 +25,15 @@ window.__cv = {
       balance: fields.balance !== undefined ? fields.balance : fields.type === 'money' ? fields.value : null,
     });
     return ref.id;
+  },
+  /** Is the coupon's photo saved on this device (Firestore's offline copy)? */
+  async photoOnDevice(familyId, couponId) {
+    try {
+      await getDocFromCache(doc(db, 'families', familyId, 'coupons', couponId, 'media', 'photo'));
+      return true;
+    } catch {
+      return false;
+    }
   },
   async serverCoupons(familyId) {
     const snap = await getDocs(collection(db, 'families', familyId, 'coupons'));

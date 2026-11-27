@@ -1,6 +1,6 @@
 // Coupons of a family and the writes that change them. The rules (how much is left, when a voucher is used
 // up) come from domain/coupon.js; this file only turns them into Firestore writes.
-import { arrayRemove, arrayUnion, Bytes, collection, deleteDoc, doc, getDoc, increment, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
+import { arrayRemove, arrayUnion, Bytes, collection, deleteDoc, doc, getDoc, getDocFromCache, getDocFromServer, increment, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/services/firebase';
 import { balanceAfterUndo, isMoney, planRedemption } from '@/domain/coupon';
 import { background, docsOf, liveSnapshot } from './sync';
@@ -48,6 +48,23 @@ export const savePhoto = (familyId, id, photo) =>
   );
 
 export const removePhoto = (familyId, id) => background(deleteDoc(photoDoc(familyId, id)), 'remove coupon photo');
+
+/**
+ * Make sure the coupon's photo is on this device (downloads it once if it isn't), so it shows at the till
+ * without signal. Resolves true when it's there.
+ */
+export async function prefetchPhoto(familyId, id) {
+  try {
+    await getDocFromCache(photoDoc(familyId, id));
+    return true; // already here
+  } catch {
+    try {
+      return (await getDocFromServer(photoDoc(familyId, id))).exists();
+    } catch {
+      return false; // offline or gone: try again another time
+    }
+  }
+}
 
 /** The coupon's photo as { blob, w, h }, or null. Works offline once it was opened before. */
 export async function loadPhoto(familyId, id) {
