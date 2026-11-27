@@ -2,7 +2,7 @@
 // "delete" or "used it" behaves (and reads) the same everywhere.
 import { useMemo } from 'react';
 import { useConfirm, useToast } from '@/ui';
-import { addCategory, addCoupon, deleteCoupon, redeemCoupon, restoreCoupon, undoLastUsage, updateCoupon } from '@/data';
+import { addCategory, addCoupon, deleteCoupon, redeemCoupon, removePhoto, restoreCoupon, savePhoto, undoLastUsage, updateCoupon } from '@/data';
 import { balanceOf, isMoney } from '@/domain/coupon';
 import { money } from '@/domain/format';
 
@@ -56,16 +56,24 @@ export function useCouponActions(family, user) {
         toast('השימוש האחרון בוטל');
       },
 
-      /** Save the form result; adds new categories to the family when needed. */
-      save(data, existing, knownCategories) {
+      /**
+       * Save the form result; adds new categories to the family when needed.
+       * `photo`: { set: { bytes, type, w, h } } a new photo · { remove: true } · undefined (unchanged).
+       */
+      save(data, existing, knownCategories, photo) {
         for (const c of data.categories || []) if (!knownCategories.includes(c)) addCategory(family.id, c);
+        const flag = photo?.set ? { hasPhoto: true } : photo?.remove ? { hasPhoto: false } : {};
+        let id;
         if (existing) {
-          updateCoupon(family.id, existing.id, data);
+          id = existing.id;
+          updateCoupon(family.id, id, { ...data, ...flag });
           toast('השינויים נשמרו');
         } else {
-          addCoupon(family.id, user, data);
+          id = addCoupon(family.id, user, { ...data, ...flag });
           toast('הקופון נוסף');
         }
+        if (photo?.set) savePhoto(family.id, id, photo.set);
+        else if (photo?.remove) removePhoto(family.id, id);
       },
     }),
     [family.id, user, confirm, toast],

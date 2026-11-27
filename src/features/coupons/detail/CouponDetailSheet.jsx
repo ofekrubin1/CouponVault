@@ -6,6 +6,7 @@ import { CouponCode, CouponInfo } from './CouponInfo';
 import { UsageHistory } from './UsageHistory';
 import { RedeemBar } from './RedeemBar';
 import { useCouponShare } from '../share/useCouponShare';
+import { PhotoRow } from '../photo/PhotoRow';
 
 /**
  * A coupon's sheet: card, code, details, history and the redeem bar.
@@ -49,6 +50,7 @@ export function CouponDetailSheet({ coupon, family, user, alertDays, onClose, on
       <div className="space-y-4">
         <CouponHero coupon={coupon} alertDays={alertDays} />
         {coupon.code && <CouponCode code={coupon.code} />}
+        <PhotoRow familyId={family.id} coupon={coupon} />
         {coupon.cvv && <CouponCode code={coupon.cvv} label="קוד אימות" copied="קוד האימות הועתק" testId="copy-cvv" />}
         <CouponInfo coupon={coupon} />
         <UsageHistory coupon={coupon} onUndoLast={() => actions.undoLast(coupon)} />

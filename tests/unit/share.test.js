@@ -24,3 +24,18 @@ describe('sharing a coupon', () => {
     expect(shareFileName({ title: '   ' })).toBe('coupon.png');
   });
 });
+
+describe('photo size', () => {
+  it('scales the long side down to the limit, keeping the shape; small photos stay as they are', async () => {
+    const { fitSize } = await import('@/domain/photo');
+    expect(fitSize(4000, 3000, 1600)).toEqual({ w: 1600, h: 1200 });
+    expect(fitSize(3000, 4000, 1600)).toEqual({ w: 1200, h: 1600 });
+    expect(fitSize(800, 600, 1600)).toEqual({ w: 800, h: 600 });
+  });
+  it('a landscape photo turns sideways to fill a portrait screen', async () => {
+    const { shouldRotate } = await import('@/domain/photo');
+    expect(shouldRotate({ w: 800, h: 560 }, { w: 390, h: 844 })).toBe(true);
+    expect(shouldRotate({ w: 560, h: 800 }, { w: 390, h: 844 })).toBe(false);
+    expect(shouldRotate({ w: 800, h: 560 }, { w: 1200, h: 800 })).toBe(false); // a wide screen shows it as it is
+  });
+});

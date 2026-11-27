@@ -2,6 +2,7 @@
 // Writes straight to the emulators started from firebase.local.json; never to production. Fixed ids, so
 // running it again resets these records to how they start (coupons you added yourself stay).
 
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -43,6 +44,7 @@ async function ensureUser(u) {
 function enc(v) {
   if (v === null || v === undefined) return { nullValue: null };
   if (v instanceof Date) return { timestampValue: v.toISOString() };
+  if (v instanceof Uint8Array) return { bytesValue: Buffer.from(v).toString('base64') };
   if (Array.isArray(v)) return { arrayValue: { values: v.map(enc) } };
   if (typeof v === 'boolean') return { booleanValue: v };
   if (typeof v === 'number') return Number.isInteger(v) ? { integerValue: String(v) } : { doubleValue: v };
@@ -101,7 +103,7 @@ export async function seedLocal() {
       type: c.type, format: c.format || 'digital', value: c.value ?? null, expiry: c.expiry ?? null,
       code: c.code || '', cvv: c.cvv || '', source: c.source || '', notes: c.notes || '',
       balance: c.type === 'money' ? c.balance ?? c.value : null,
-      status: c.status || 'active', usages: c.usages || [],
+      status: c.status || 'active', usages: c.usages || [], hasPhoto: !!c.photo,
       ...(c.status === 'used' ? { usedAt: c.usedAt, usedByName: c.usedByName } : {}),
       createdBy: uid[by], createdByName: USERS[by].name, createdAt: now, updatedAt: now,
     };
@@ -114,7 +116,7 @@ export async function seedLocal() {
     { title: 'ארוחת מקרויאל', store: 'מקדונלדס', category: 'אוכל', type: 'product', code: 'MC-77120', expiry: dayIn(9) },
     { title: 'קפה ומאפה', store: 'ארומה', category: 'אוכל', type: 'product', code: 'AR-3301', expiry: dayIn(180) },
     { title: 'ארוחה זוגית', store: 'Food Appeal', category: 'אוכל', type: 'money', value: 300, code: 'FA-99102', cvv: '412', expiry: dayIn(60) },
-    { title: 'תו הזהב', store: 'שופרסל', category: 'סופרמרקט', type: 'money', value: 990, code: '8801-5523-14', format: 'physical', expiry: dayIn(40), notes: 'להביא את הכרטיס לקופה' },
+    { title: 'תו הזהב', store: 'שופרסל', category: 'סופרמרקט', type: 'money', value: 990, code: '8801-5523-14', format: 'physical', expiry: dayIn(40), notes: 'להביא את הכרטיס לקופה', photo: true },
     { title: 'שובר קניות', store: 'רמי לוי', category: 'סופרמרקט', type: 'money', value: 500, code: 'RL-20931', expiry: dayIn(140) },
     { title: '20% הנחה על הכול', store: 'קסטרו', category: 'ביגוד', type: 'percent', value: 20, code: 'CAS20', expiry: dayIn(55) },
     { title: 'בגדי תינוקות', store: 'מיננה', category: 'ביגוד', type: 'money', value: 200, code: 'MN-5521', expiry: dayIn(90) },
@@ -130,7 +132,13 @@ export async function seedLocal() {
     { title: 'פיצה משפחתית', store: 'דומינוס', category: 'אוכל', type: 'money', value: 120, balance: 0, code: 'DOM-4410', status: 'used', usedAt: ago(3), usedByName: USERS.yossi.name,
       usages: [{ at: ago(3), by: uid.yossi, byName: USERS.yossi.name, amount: 120 }] },
   ];
-  for (const [i, c] of famTest.entries()) await put(`families/fam-test/coupons/demo-${String(i + 1).padStart(2, '0')}`, coupon(c, i % 3 === 1 ? 'dana' : 'me'));
+  const voucherPhoto = new Uint8Array(readFileSync('tests/e2e/fixtures/voucher.jpg'));
+  for (const [i, c] of famTest.entries()) {
+    const id = `demo-${String(i + 1).padStart(2, '0')}`;
+    await put(`families/fam-test/coupons/${id}`, coupon(c, i % 3 === 1 ? 'dana' : 'me'));
+    // a voucher photo (with a barcode) on the coupons marked `photo`
+    if (c.photo) await put(`families/fam-test/coupons/${id}/media/photo`, { data: voucherPhoto, type: 'image/jpeg', w: 800, h: 560, updatedAt: now });
+  }
 
   const famFriends = [
     { title: 'נעליים', store: 'פוט לוקר', category: 'ביגוד', type: 'money', value: 350, code: 'FL-7710', expiry: dayIn(70) },

@@ -8,6 +8,7 @@ import { CategoryPicker } from './CategoryPicker';
 import { CvvField } from './CvvField';
 import { StoreInput } from './StoreInput';
 import { useCouponForm } from './useCouponForm';
+import { PhotoButton, usePhotoField } from '../photo/PhotoButton';
 
 /** Add / edit a coupon. Errors show next to their field and the form scrolls to the first one. */
 export function CouponFormSheet({ coupon, family, user, categories, stores, onClose }) {
@@ -15,11 +16,12 @@ export function CouponFormSheet({ coupon, family, user, categories, stores, onCl
   const actions = useCouponActions(family, user);
   const body = useRef(null);
   const { f, set, errors, hasErrors, unsaved, pickable, toggleCategory, submit } = useCouponForm(coupon, categories, body);
+  const photo = usePhotoField(family.id, coupon);
   const [more, setMore] = useState(!!(coupon?.source || coupon?.notes));
 
   const save = () =>
     submit((data) => {
-      actions.save(data, coupon, categories);
+      actions.save(data, coupon, categories, photo.change);
       onClose();
     });
 
@@ -31,7 +33,7 @@ export function CouponFormSheet({ coupon, family, user, categories, stores, onCl
       tall
       title={editing ? 'עריכת קופון' : 'קופון חדש'}
       onClose={onClose}
-      unsaved={unsaved}
+      unsaved={unsaved || !!photo.change}
       dragFromContent={false}
       footer={
         <Button variant="primary" size="lg" className="w-full" onClick={save} icon={editing ? Check : Plus} data-testid="coupon-save">
@@ -89,20 +91,26 @@ export function CouponFormSheet({ coupon, family, user, categories, stores, onCl
           </Field>
         </div>
 
-        <Field id="code" label="קוד / מספר שובר" error={errors.code}>
-          <Input
-            id="code"
-            icon={Hash}
-            dir="ltr"
-            className="text-left font-mono tracking-wider placeholder:text-right placeholder:font-sans placeholder:tracking-normal"
-            value={f.code}
-            onChange={set('code')}
-            placeholder="למשל: 1445-3680"
-            error={errors.code}
-            autoCapitalize="characters"
-            autoComplete="off"
-          />
-        </Field>
+        {/* the voucher photo (e.g. its barcode) attaches beside the code */}
+        <div className="flex items-start gap-2">
+          <div className="min-w-0 flex-1">
+            <Field id="code" label="קוד / מספר שובר" error={errors.code}>
+              <Input
+                id="code"
+                icon={Hash}
+                dir="ltr"
+                className="text-left font-mono tracking-wider placeholder:text-right placeholder:font-sans placeholder:tracking-normal"
+                value={f.code}
+                onChange={set('code')}
+                placeholder="למשל: 1445-3680"
+                error={errors.code}
+                autoCapitalize="characters"
+                autoComplete="off"
+              />
+            </Field>
+          </div>
+          <PhotoButton field={photo} />
+        </div>
 
         {/* the verification-code switch, with digital / physical in small on its left */}
         <CvvField

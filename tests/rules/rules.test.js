@@ -4,7 +4,7 @@ import { describe, it, beforeAll, afterAll, beforeEach } from 'vitest';
 import { initializeTestEnvironment, assertSucceeds, assertFails } from '@firebase/rules-unit-testing';
 import {
   doc, setDoc, getDoc, updateDoc, writeBatch, collection, query, where, getDocs, arrayUnion, addDoc, deleteDoc, increment,
-  serverTimestamp, Timestamp,
+  serverTimestamp, Timestamp, Bytes,
 } from 'firebase/firestore';
 
 let env;
@@ -120,6 +120,25 @@ describe('coupons', () => {
     await approve('alice', 'bob');
     await updateDoc(doc(db('alice'), 'families/f1'), { members: ['alice'] });
     await assertFails(getDocs(collection(db('bob'), 'families/f1/coupons')));
+  });
+});
+
+describe('coupon photos', () => {
+  const photo = (n) => ({ data: Bytes.fromUint8Array(new Uint8Array(n)), type: 'image/jpeg', w: 10, h: 10 });
+  const ref = (uid) => doc(db(uid), 'families/f1/coupons/c1/media/photo');
+  it('a member can save and read the photo of a coupon', async () => {
+    await assertSucceeds(setDoc(ref('alice'), photo(1000)));
+    await assertSucceeds(getDoc(ref('alice')));
+  });
+  it('nobody outside the family can read or write it', async () => {
+    await setDoc(ref('alice'), photo(1000));
+    await assertFails(getDoc(ref('bob')));
+    await assertFails(setDoc(ref('bob'), photo(10)));
+  });
+  it('a photo over 700KB is refused (the space stays small)', () => assertFails(setDoc(ref('alice'), photo(720 * 1024))));
+  it('a member can delete it', async () => {
+    await setDoc(ref('alice'), photo(1000));
+    await assertSucceeds(deleteDoc(ref('alice')));
   });
 });
 

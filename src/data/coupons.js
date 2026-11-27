@@ -1,12 +1,14 @@
 // Coupons of a family and the writes that change them. The rules (how much is left, when a voucher is used
 // up) come from domain/coupon.js; this file only turns them into Firestore writes.
-import { arrayRemove, arrayUnion, collection, deleteDoc, doc, increment, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
+import { arrayRemove, arrayUnion, Bytes, collection, deleteDoc, doc, getDoc, increment, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/services/firebase';
 import { balanceAfterUndo, isMoney, planRedemption } from '@/domain/coupon';
 import { background, docsOf, liveSnapshot } from './sync';
 
 const couponsCol = (familyId) => collection(db, 'families', familyId, 'coupons');
 const couponDoc = (familyId, id) => doc(db, 'families', familyId, 'coupons', id);
+// The coupon's photo lives in its own document, so the coupon list never downloads photos.
+const photoDoc = (familyId, id) => doc(db, 'families', familyId, 'coupons', id, 'media', 'photo');
 
 export const watchCoupons = (familyId, cb, onError) => liveSnapshot(couponsCol(familyId), {}, (snap) => cb(docsOf(snap)), onError);
 
@@ -32,7 +34,28 @@ export function addCoupon(familyId, user, data) {
 export const updateCoupon = (familyId, id, data) =>
   background(updateDoc(couponDoc(familyId, id), { ...data, updatedAt: serverTimestamp() }), 'update coupon');
 
-export const deleteCoupon = (familyId, id) => background(deleteDoc(couponDoc(familyId, id)), 'delete coupon');
+/** Deletes the coupon and its photo (so no space stays taken). */
+export function deleteCoupon(familyId, id) {
+  background(deleteDoc(couponDoc(familyId, id)), 'delete coupon');
+  background(deleteDoc(photoDoc(familyId, id)), 'delete coupon photo');
+}
+
+/** Saves the coupon's photo ({ bytes, type, w, h } from compressPhoto). */
+export const savePhoto = (familyId, id, photo) =>
+  background(
+    setDoc(photoDoc(familyId, id), { data: Bytes.fromUint8Array(photo.bytes), type: photo.type, w: photo.w, h: photo.h, updatedAt: serverTimestamp() }),
+    'save coupon photo',
+  );
+
+export const removePhoto = (familyId, id) => background(deleteDoc(photoDoc(familyId, id)), 'remove coupon photo');
+
+/** The coupon's photo as { blob, w, h }, or null. Works offline once it was opened before. */
+export async function loadPhoto(familyId, id) {
+  const snap = await getDoc(photoDoc(familyId, id));
+  if (!snap.exists()) return null;
+  const d = snap.data();
+  return { blob: new Blob([d.data.toUint8Array()], { type: d.type || 'image/jpeg' }), w: d.w, h: d.h };
+}
 
 /**
  * Redeem (amount = null means "used it all"). Balance changes use increment() and the history arrayUnion(),

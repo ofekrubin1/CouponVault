@@ -66,6 +66,14 @@ service cloud.firestore {
 
       match /coupons/{cid} {
         allow read, write: if isMember(fid);
+
+        // The coupon's photo (a compressed JPEG, kept apart so the list doesn't load it). Capped at 700KB.
+        match /media/{mid} {
+          allow read, delete: if isMember(fid);
+          allow create, update: if isMember(fid)
+            && request.resource.data.data is bytes
+            && request.resource.data.data.size() <= 700 * 1024;
+        }
       }
     }
   }
