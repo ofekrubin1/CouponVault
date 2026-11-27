@@ -244,6 +244,13 @@ describe('brand logos', () => {
     for (const b of BRAND_LIST) expect([b.domain, isOwnLogo(logoSources(b.domain)[0])]).toEqual([b.domain, true]);
     expect(logoSources('some-unknown-shop.co.il')).toEqual([logoUrl('some-unknown-shop.co.il')]); // only the remote icon
   });
+  it('BBB is Burgers Bar (as a whole word only); Legenda with the logo the user gave', () => {
+    for (const t of ['BBB', 'bbb', 'שובר BBB 100', 'בורגרס בר']) expect([t, brandDomainOf(t)]).toEqual([t, 'burgersbar.co.il']);
+    expect(brandDomainOf('BBBX')).toBeNull();
+    for (const t of ["לג'נדה", 'לגנדה', 'Legenda', 'גלידה בלג׳נדה']) expect([t, brandDomainOf(t)]).toEqual([t, 'legenda.co.il']);
+    expect(logoSources('legenda.co.il')[0]).toBe('/brands/legenda.png');
+    expect(isWideLogo('legenda.co.il')).toBe(false);
+  });
   it('short names only match as a whole word', () => {
     expect(brandDomainOf('פנאי ובילוי')).toBeNull(); // contains "ילו"
     expect(brandDomainOf('מתנה לחבר')).toBeNull(); // contains "חבר"

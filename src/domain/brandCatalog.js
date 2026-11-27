@@ -51,7 +51,7 @@ export const BRANDS = [
   // restaurants, cafés, sweets
   ['kfc.co.il', 'kfc', 'קיי אף סי'],
   ['papajohns.co.il', 'פאפא גונס', 'papa johns'],
-  ['burgersbar.co.il', 'בורגרס בר', 'burgers bar', 'burgersbar'],
+  ['burgersbar.co.il', 'בורגרס בר', 'burgers bar', 'burgersbar', '=bbb', 'בי בי בי'],
   ['agadir.co.il', 'אגאדיר', 'agadir'],
   ['japanika.net', 'גפניקה', 'japanika'],
   ['arcaffe.co.il', 'ארקפה', 'arcaffe'],
@@ -111,6 +111,7 @@ export const BRANDS = [
   ['minene.net', 'מיננה', 'minene'],
   ['naamanp.co.il', 'נעמן', 'נעמן פורצלן', 'naaman'],
   ['flyingtiger.com', 'פליינג טייגר', 'flying tiger', 'flyingtiger'],
+  ['legenda.co.il', "לג'נדה", 'לג׳נדה', 'לגנדה', 'legenda'], // gelato & frozen yogurt
   ['azrielimalls.co.il', 'קניוני עזריאלי', 'עזריאלי', 'azrieli'], // the malls' gift card; azrieli.com itself closed in 2023
   // hotels & cinema
   ['isrotel.com', 'ישרוטל', 'isrotel'],
@@ -191,4 +192,5 @@ export const OWN_LOGOS = {
   'naamanp.co.il': { src: '/brands/naaman.png', wide: true },
   'flyingtiger.com': { src: '/brands/flyingtiger.png', wide: true },
   'azrielimalls.co.il': { src: '/brands/azrieli.png', wide: true },
+  'legenda.co.il': '/brands/legenda.png', // the logo the user sent
 };
