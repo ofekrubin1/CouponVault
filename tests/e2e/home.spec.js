@@ -198,42 +198,54 @@ test('T73 the "פגים בקרוב" toggle beside the search shows only coupons 
   await expect(list).toHaveCount(4);
 });
 
-test('T90 a filter button between the search and "פגים בקרוב" filters by coupon type; the search hides both while typing', async ({ page }) => {
+test('T90 a filter button between the search and "פגים בקרוב" filters by category in a short sheet; the search hides both while typing', async ({ page }) => {
   const { familyId } = await setup(page);
   await seed(page, familyId, [
-    { title: 'כסף 1', store: 'a', type: 'money', value: 100 },
-    { title: 'כסף דחוף', store: 'b', type: 'money', value: 50, expiry: isoIn(4) },
-    { title: 'אחוזים', store: 'c', type: 'percent', value: 20 },
-    { title: 'מוצר', store: 'd', type: 'product' },
+    { title: 'פיצה', store: 'a', category: 'אוכל', type: 'other' },
+    { title: 'סושי דחוף', store: 'b', category: 'אוכל', type: 'other', expiry: isoIn(4) },
+    { title: 'חולצה', store: 'c', category: 'ביגוד', type: 'other' },
+    { title: 'סופר', store: 'd', category: 'סופרמרקט', type: 'other' },
+    { title: 'בלי', store: 'e', type: 'other' },
   ]);
   const list = page.getByTestId('coupon-list').getByTestId('coupon-ticket');
-  const filter = page.getByTestId('type-filter');
+  const filter = page.getByTestId('category-filter');
   const soon = page.getByTestId('expiring-filter');
   const search = page.getByRole('searchbox', { name: 'חיפוש' });
-  await expect(list).toHaveCount(4);
+  await expect(list).toHaveCount(5);
   // order on the row (right to left): search · filter · about to expire
   const [s, f, x] = [await search.boundingBox(), await filter.boundingBox(), await soon.boundingBox()];
   expect(f.x + f.width).toBeLessThanOrEqual(s.x + 1);
   expect(x.x + x.width).toBeLessThanOrEqual(f.x + 1);
-  expect(Math.abs(f.y + f.height / 2 - (s.y + s.height / 2))).toBeLessThan(3);
 
-  // the menu: only the types that are there, with counts
+  // the sheet: short (the home screen stays visible above it), small tiles of the categories that have coupons
   await filter.click();
-  const menu = page.getByTestId('type-menu');
-  await expect(menu.getByRole('option')).toHaveText([/שובר כספי\s*2/, /הנחה באחוזים\s*1/, /שובר למוצר\s*1/]);
-  await menu.getByRole('option', { name: /שובר כספי/ }).click();
+  const sheetEl = page.getByRole('dialog', { name: 'סינון לפי קטגוריה' });
+  await page.waitForTimeout(450); // slide-in
+  const vh = page.viewportSize().height;
+  expect((await sheetEl.boundingBox()).height).toBeLessThan(vh * 0.5);
+  const menu = page.getByTestId('category-menu');
+  const tiles = menu.getByRole('option');
+  await expect(tiles).toHaveCount(4);
+  expect(await tiles.evaluateAll((els) => els.map((e) => e.dataset.category))).toEqual(['אוכל', 'סופרמרקט', 'ביגוד', 'ללא קטגוריה']);
+  // small tiles: just the icon and the name (no count), and nothing is cut off
+  const tile = await tiles.first().boundingBox();
+  expect(tile.width).toBeLessThan(100);
+  expect(tile.height).toBeLessThan(60);
+  await expect(tiles.first()).toHaveText('אוכל');
+  expect(await tiles.evaluateAll((els) => els.every((e) => { const t = e.querySelector('span.truncate'); return t.scrollWidth <= t.clientWidth; }))).toBe(true);
+  // choosing updates the list behind at once; the button shows the count of coupons
+  await menu.locator('[data-category="אוכל"]').click();
   await expect(list).toHaveCount(2);
-  await menu.getByRole('option', { name: /שובר למוצר/ }).click();
+  await menu.locator('[data-category="ללא קטגוריה"]').click();
   await expect(list).toHaveCount(3);
-  // closes on a tap outside; the button shows how many types are chosen
-  await page.getByTestId('summary-card').click();
-  await expect(menu).toHaveCount(0);
+  await sheetEl.getByRole('button', { name: 'הצג 3 קופונים' }).click();
+  await expect(sheetEl).toHaveCount(0);
   await expect(filter).toHaveAttribute('data-active', 'true');
   await expect(filter).toContainText('2');
   // together with "about to expire"
   await soon.click();
   await expect(list).toHaveCount(1);
-  await expect(list.first()).toHaveAttribute('data-title', 'כסף דחוף');
+  await expect(list.first()).toHaveAttribute('data-title', 'סושי דחוף');
   await soon.click();
 
   // typing: both buttons step aside, the search takes the whole row
@@ -243,9 +255,11 @@ test('T90 a filter button between the search and "פגים בקרוב" filters b
   expect((await search.boundingBox()).width).toBeGreaterThan(s.width + 100);
   await search.blur();
 
-  // clearing the filter shows everything again
+  // clearing shows everything again
   await filter.click();
-  await menu.getByRole('button', { name: 'ניקוי הסינון' }).click();
-  await expect(list).toHaveCount(4);
+  await sheetEl.getByRole('button', { name: 'ניקוי' }).click();
+  await expect(list).toHaveCount(5);
+  await page.goBack(); // the back button closes the sheet
+  await expect(sheetEl).toHaveCount(0);
   await expect(filter).not.toHaveAttribute('data-active', 'true');
 });

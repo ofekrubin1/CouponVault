@@ -74,7 +74,7 @@ export async function seedLocal() {
   const now = new Date();
 
   const families = [
-    { id: 'fam-test', name: 'משפחת בדיקה', members: ['me', 'dana', 'yossi'], code: 'BDKTEST2', custom: ['בית'] },
+    { id: 'fam-test', name: 'משפחת בדיקה', members: ['me', 'dana', 'yossi'], code: 'BDKTEST2', custom: ['בית', 'מתנות', 'פארם', 'דלק', 'צעצועים'] }, // 9 categories in all, like a real family
     { id: 'fam-friends', name: 'חברים לבדיקה', members: ['me', 'yossi'], code: 'FRNTEST3' },
   ];
   for (const f of families) {
@@ -126,7 +126,10 @@ export async function seedLocal() {
     { title: 'כלים לבית', store: 'נעמן', category: 'בית', type: 'money', value: 250, code: 'NM-8812', expiry: dayIn(200) },
     { title: 'מצעים', store: 'ורדינון', category: 'בית', type: 'money', value: 180, code: 'VR-1203', expiry: dayIn(75) },
     { title: 'גיפט קארד לקניון', store: 'קניוני עזריאלי', category: 'כללי', type: 'money', value: 500, code: 'AZ-660021', expiry: dayIn(300) },
-    { title: 'מתנות קטנות', store: 'Flying Tiger', category: 'כללי', type: 'money', value: 100, code: 'FT-3020', expiry: dayIn(12) },
+    { title: 'מתנות קטנות', store: 'Flying Tiger', category: 'מתנות', type: 'money', value: 100, code: 'FT-3020', expiry: dayIn(12) },
+    { title: 'שובר טיפוח', store: 'סופר פארם', category: 'פארם', type: 'money', value: 150, code: 'SP-7781', expiry: dayIn(80) },
+    { title: 'תדלוק', store: 'פז', category: 'דלק', type: 'money', value: 200, code: 'PZ-1209', expiry: dayIn(120) },
+    { title: 'משחק לגן', store: 'טויס אר אס', category: 'צעצועים', type: 'money', value: 120, code: 'TR-5520', expiry: dayIn(65) },
     // archive: one expired, one used up
     { title: 'סרט זוגי', store: 'הוט סינמה', category: 'כללי', type: 'other', code: 'HC-1180', expiry: dayIn(-5) },
     { title: 'פיצה משפחתית', store: 'דומינוס', category: 'אוכל', type: 'money', value: 120, balance: 0, code: 'DOM-4410', status: 'used', usedAt: ago(3), usedByName: USERS.yossi.name,

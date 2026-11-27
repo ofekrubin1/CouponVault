@@ -4,7 +4,7 @@ import { Button, EmptyState, cx } from '@/ui';
 import { money } from '@/domain/format';
 import { CouponRow, categoryLabel } from '@/features/coupons';
 import { SearchBar } from './SearchBar';
-import { TypeFilter } from './TypeFilter';
+import { CategoryFilter } from './CategoryFilter';
 import { useHomeView } from './useHomeView';
 import { BrandsBoardSheet } from './brands/BrandsBoardSheet';
 import { BRAND_LIST } from '@/domain/brands';
@@ -78,10 +78,10 @@ function JoinRequestsBanner({ requests, onOpen }) {
 export function HomePage({ coupons, categories, alertDays, requests = [], onOpen, onAdd, onDelete, onRequests }) {
   const [query, setQuery] = useState('');
   const [soonOnly, setSoonOnly] = useState(false);
-  const [types, setTypes] = useState(() => new Set());
+  const [cats, setCats] = useState(() => new Set());
   const [searching, setSearching] = useState(false); // the search field has focus (keyboard open)
   const [brands, setBrands] = useState(false);
-  const view = useHomeView(coupons, alertDays, categories, query, soonOnly, types);
+  const view = useHomeView(coupons, alertDays, categories, query, soonOnly, cats);
   const board = brands && <BrandsBoardSheet onClose={() => setBrands(false)} />;
 
   if (view.active.length === 0) {
@@ -110,7 +110,7 @@ export function HomePage({ coupons, categories, alertDays, requests = [], onOpen
     <div className="space-y-3">
       <JoinRequestsBanner requests={requests} onOpen={onRequests} />
       <Summary {...view.summary} />
-      {/* search · type filter · about to expire. While typing, the buttons step aside and the search takes the row */}
+      {/* search · category filter · about to expire. While typing, the buttons step aside and the search takes the row */}
       <div className="flex gap-2">
         <div className="min-w-0 flex-1">
           <SearchBar
@@ -124,7 +124,7 @@ export function HomePage({ coupons, categories, alertDays, requests = [], onOpen
         </div>
         {!searching && (
           <>
-            <TypeFilter counts={view.typeCounts} chosen={view.types} onChange={setTypes} />
+            <CategoryFilter counts={view.categoryCounts} chosen={view.cats} onChange={setCats} shownCount={view.shownCount} />
             <ExpiringToggle count={view.summary.expiringCount} on={view.soon} onToggle={() => setSoonOnly(!view.soon)} />
           </>
         )}
