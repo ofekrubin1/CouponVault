@@ -4,7 +4,6 @@ import { setErrorReporter } from '@/data';
 import { watchAuth } from '@/services/auth';
 import { LOCAL } from '@/services/firebase';
 import { LoginPage } from '@/features/auth/LoginPage';
-import { LockGate } from '@/features/auth/AppLock';
 import { OnboardingPage, useFamilies } from '@/features/families';
 import { AppShell } from './AppShell';
 import { clearJoinLink, readJoinLink } from './joinLink';
@@ -49,11 +48,7 @@ function AuthGate() {
   useEffect(() => watchAuth(setUser), []);
   if (user === undefined) return <Spinner full />;
   if (!user) return <LoginPage />;
-  return (
-    <LockGate key={user.uid} user={user}>
-      <SignedIn user={user} />
-    </LockGate>
-  );
+  return <SignedIn key={user.uid} user={user} />;
 }
 
 /** Loads the user's families: none → welcome screen; otherwise the app for the selected family. */

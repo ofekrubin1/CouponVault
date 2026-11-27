@@ -28,11 +28,6 @@ export async function stubClipboard(page) {
 /** Opens the app and signs in as a fresh user (Auth emulator, no Google popup). */
 export async function login(page, { name = 'דנה כהן', email, path = '/' } = {}) {
   const mail = email || `u-${uniq()}@test.dev`;
-  // Test phones have no Face ID / fingerprint (Chromium on Windows would report Windows Hello and the app would
-  // offer the lock over everything). lock.spec.js brings its own stand-in, set up before this.
-  await page.addInitScript(() => {
-    if (!window.__fakeBiometrics) window.PublicKeyCredential = undefined;
-  });
   await page.goto(path);
   await page.waitForFunction(() => !!window.__cv);
   const uid = await page.evaluate(([e, n]) => window.__cv.login(e, n), [mail, name]);

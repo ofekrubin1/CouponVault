@@ -11,7 +11,6 @@ import { AppHeader } from './AppHeader';
 import { BottomNav } from './BottomNav';
 import { Fab } from './Fab';
 import { useCouponSheet } from './useCouponSheet';
-import { LockOffer } from '@/features/auth/AppLock';
 import { usePhotoPrefetch } from '@/features/coupons/photo/usePhotoPrefetch';
 
 /** The signed-in app for one family: header, current tab, bottom bar, + button and coupon sheets. */
@@ -70,7 +69,6 @@ export function AppShell({ user, family, families, ready, joinCode, alertDays, p
 
       {tab !== 'settings' && <Fab onClick={sheets.openNew} />}
       <BottomNav tab={tab} onChange={go} badges={{ settings: requests.length }} />
-      <LockOffer user={user} />
 
       {sheets.sheet?.kind === 'detail' && sheets.current && (
         <CouponDetailSheet

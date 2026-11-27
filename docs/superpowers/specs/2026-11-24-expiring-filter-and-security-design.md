@@ -69,3 +69,7 @@ Backup password (no backup), family admin role, App Check, background auto-lock,
 Unit tests for invite rules and filter logic; Firestore rules tests for requests, expiry and the removed self-join;
 Playwright on iPhone + Android for the filter, sign-out cleanup, the full join-approval flow between two phones,
 code expiry, and the lock (virtual authenticator / stubbed WebAuthn). Then a QA pass in the local test environment.
+
+## Update 2026-11-27: Face ID removed
+Section ה was shipped and then removed at the user's request, after a first unlock on a real iPhone did not find
+the saved key ("no passkeys for this website"). Phones that had turned it on forget the setting on the next start.

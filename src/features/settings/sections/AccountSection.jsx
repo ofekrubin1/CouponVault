@@ -2,12 +2,10 @@ import { LogOut } from 'lucide-react';
 import { Avatar, Card } from '@/ui';
 import { signOut } from '@/services/auth';
 import { buildLabel } from '@/app/appUpdate';
-import { LockSetting } from '@/features/auth/AppLock';
 
 export function AccountSection({ user }) {
   return (
     <>
-      <LockSetting user={user} />
       <Card className="!p-4">
         <div className="flex items-center gap-3">
           <Avatar name={user.displayName} photo={user.photoURL} size={40} />

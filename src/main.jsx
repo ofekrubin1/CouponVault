@@ -6,6 +6,15 @@ import './index.css';
 
 keepAppUpdated();
 
+// Face ID lock was removed: forget its leftover settings on phones that had turned it on.
+try {
+  Object.keys(localStorage)
+    .filter((k) => k.startsWith('cv-lock'))
+    .forEach((k) => localStorage.removeItem(k));
+} catch {
+  /* storage unavailable: nothing to clean */
+}
+
 // Save the app on the device so it opens without signal (public/sw.js). Not with the dev server: it serves
 // unbuilt files and reloads them live, which a saved copy would get in the way of.
 if (!import.meta.env.DEV && 'serviceWorker' in navigator) {
