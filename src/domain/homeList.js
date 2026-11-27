@@ -1,5 +1,5 @@
 // The home screen's list: search, and coupons grouped by category like a notepad. Pure functions.
-import { GENERAL_CATEGORY, NO_CATEGORY } from './constants';
+import { COUPON_TYPES, GENERAL_CATEGORY, NO_CATEGORY } from './constants';
 import { couponCategories } from './coupon';
 
 const SEARCH_FIELDS = ['title', 'store', 'source', 'notes', 'code'];
@@ -9,6 +9,16 @@ export function matchesSearch(c, query) {
   if (!s) return true;
   return SEARCH_FIELDS.some((k) => c[k] && String(c[k]).toLowerCase().includes(s)) || couponCategories(c).some((x) => x.toLowerCase().includes(s));
 }
+
+/** [[type, count], ...] in the form's order, only the types the coupons have (for the filter menu). */
+export function typeCounts(coupons) {
+  const n = {};
+  for (const c of coupons) n[c.type] = (n[c.type] || 0) + 1;
+  return COUPON_TYPES.filter((t) => n[t.key]).map((t) => [t.key, n[t.key]]);
+}
+
+/** Coupons of any of the chosen types; with none chosen, all of them. */
+export const filterByTypes = (coupons, types) => (types.size ? coupons.filter((c) => types.has(c.type)) : coupons);
 
 export const searchCoupons = (coupons, query = '') => coupons.filter((c) => matchesSearch(c, query));
 

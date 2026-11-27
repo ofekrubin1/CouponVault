@@ -4,6 +4,7 @@ import { Button, EmptyState, cx } from '@/ui';
 import { money } from '@/domain/format';
 import { CouponRow, categoryLabel } from '@/features/coupons';
 import { SearchBar } from './SearchBar';
+import { TypeFilter } from './TypeFilter';
 import { useHomeView } from './useHomeView';
 import { BrandsBoardSheet } from './brands/BrandsBoardSheet';
 import { BRAND_LIST } from '@/domain/brands';
@@ -77,9 +78,10 @@ function JoinRequestsBanner({ requests, onOpen }) {
 export function HomePage({ coupons, categories, alertDays, requests = [], onOpen, onAdd, onDelete, onRequests }) {
   const [query, setQuery] = useState('');
   const [soonOnly, setSoonOnly] = useState(false);
+  const [types, setTypes] = useState(() => new Set());
   const [searching, setSearching] = useState(false); // the search field has focus (keyboard open)
   const [brands, setBrands] = useState(false);
-  const view = useHomeView(coupons, alertDays, categories, query, soonOnly);
+  const view = useHomeView(coupons, alertDays, categories, query, soonOnly, types);
   const board = brands && <BrandsBoardSheet onClose={() => setBrands(false)} />;
 
   if (view.active.length === 0) {
@@ -108,7 +110,7 @@ export function HomePage({ coupons, categories, alertDays, requests = [], onOpen
     <div className="space-y-3">
       <JoinRequestsBanner requests={requests} onOpen={onRequests} />
       <Summary {...view.summary} />
-      {/* while typing, the toggle steps aside and the search takes the whole row */}
+      {/* search · type filter · about to expire. While typing, the buttons step aside and the search takes the row */}
       <div className="flex gap-2">
         <div className="min-w-0 flex-1">
           <SearchBar
@@ -120,7 +122,12 @@ export function HomePage({ coupons, categories, alertDays, requests = [], onOpen
             onBlur={() => setSearching(false)}
           />
         </div>
-        {!searching && <ExpiringToggle count={view.summary.expiringCount} on={view.soon} onToggle={() => setSoonOnly(!view.soon)} />}
+        {!searching && (
+          <>
+            <TypeFilter counts={view.typeCounts} chosen={view.types} onChange={setTypes} />
+            <ExpiringToggle count={view.summary.expiringCount} on={view.soon} onToggle={() => setSoonOnly(!view.soon)} />
+          </>
+        )}
       </div>
 
       <div className="overflow-hidden rounded-[18px] bg-white shadow-[0_2px_10px_rgba(10,31,68,0.06)]" data-testid="coupon-list">

@@ -5,7 +5,7 @@ import { validateCouponForm, couponFromForm, formFromCoupon, firstInvalidField }
 import { couponCategories, resolveCategories, withFamilyCategories } from '@/domain/coupon';
 import { isUrl, urlHost, displayStore, splitLinks } from '@/domain/links';
 import { brandDomain, brandDomainOf, logoUrl, logoSources, isOwnLogo, isWideLogo, BRAND_LIST, searchBrands } from '@/domain/brands';
-import { searchCoupons, groupByCategory } from '@/domain/homeList';
+import { searchCoupons, groupByCategory, typeCounts, filterByTypes } from '@/domain/homeList';
 import { normalizeInviteCode, familyCategories, membersOf, pickCurrentFamily, inviteMessage, alertDaysFor, inviteExpiry, isInviteExpired } from '@/domain/family';
 import { NO_CATEGORY, DEFAULT_CATEGORIES } from '@/domain/constants';
 
@@ -156,6 +156,12 @@ describe('home list', () => {
   it('a category the family no longer has still gets its group, before כללי', () => {
     const groups = groupByCategory(list, ['כללי', 'אוכל', 'סופרמרקט', 'ביגוד']);
     expect(groups.map((g) => g.category)).toEqual(['אוכל', 'ביגוד', 'רכב', 'כללי', NO_CATEGORY]);
+  });
+  it('counts per type, in the order of the form, only the types that are there', () =>
+    expect(typeCounts(list)).toEqual([['money', 4], ['percent', 1], ['other', 1]]));
+  it('filters by any of the chosen types; none chosen = everything', () => {
+    expect(ids(filterByTypes(list, new Set(['percent', 'other'])))).toEqual([3, 4]);
+    expect(ids(filterByTypes(list, new Set()))).toEqual([1, 2, 3, 4, 5, 6]);
   });
   it('keeps the order of the coupons inside a group (already sorted by expiry)', () => {
     const [food] = groupByCategory([list[1], list[0]], ['אוכל']);
