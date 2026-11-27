@@ -90,3 +90,25 @@ test('T84 deleting a coupon deletes its photo too (no space left taken); the pho
   await expect(ticket(page, 'למחיקה')).toHaveCount(0);
   await expect.poll(() => storedPhoto(page, familyId, c.id)).toBeNull();
 });
+
+test('T89 with a photo of the voucher the code is not required', async ({ page }) => {
+  const { familyId } = await setup(page);
+  await page.getByTestId('fab-add').click();
+  const s = sheet(page, 'קופון חדש');
+  await s.getByLabel('שם הקופון').fill('רק תמונה');
+  await s.getByLabel('איפה אפשר לממש').fill('שופרסל');
+  await s.locator('#value').fill('200');
+  // without code and without photo: the code is asked for
+  await s.getByTestId('coupon-save').click();
+  await expect(s.getByText('חסר קוד / מספר שובר. או שצרפו תמונה של השובר')).toBeVisible();
+  // with a photo: saves without a code
+  await s.getByTestId('photo-input').setInputFiles(VOUCHER);
+  await expect(s.getByTestId('photo-thumb')).toBeVisible();
+  await s.getByTestId('coupon-save').click();
+  await expect(s).toBeHidden();
+  await expect.poll(async () => (await serverCoupons(page, familyId))[0]).toMatchObject({ code: '', hasPhoto: true });
+  // the coupon: no code box, the photo row instead
+  const d = await openTicket(page, 'רק תמונה');
+  await expect(d.getByTestId('copy-code')).toHaveCount(0);
+  await expect(d.getByTestId('photo-row')).toContainText('הקשה להגדלה');
+});

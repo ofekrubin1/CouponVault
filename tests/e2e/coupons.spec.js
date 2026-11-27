@@ -23,7 +23,7 @@ test('T13 (reported bug) a new coupon saves, closes the sheet and shows up right
   await expect.poll(async () => (await serverCoupons(page, familyId))[0]?.code).toBe('144536801');
 });
 
-test('T13b the coupon code is required', async ({ page }) => {
+test('T13b the coupon code is required (when there is no photo)', async ({ page }) => {
   await setup(page);
   await page.getByTestId('fab-add').click();
   const s = sheet(page, 'קופון חדש');
@@ -32,7 +32,7 @@ test('T13b the coupon code is required', async ({ page }) => {
   await chooseType(s, 'אחר');
   await s.getByTestId('coupon-save').click();
   await expect(s).toBeVisible();
-  await expect(s.getByText('חסר קוד / מספר שובר')).toBeVisible();
+  await expect(s.getByText('חסר קוד / מספר שובר. או שצרפו תמונה של השובר')).toBeVisible();
   await expect(s.getByLabel('קוד / מספר שובר')).toBeFocused();
   await s.getByLabel('קוד / מספר שובר').fill('Z-77');
   await s.getByTestId('coupon-save').click();
@@ -40,15 +40,15 @@ test('T13b the coupon code is required', async ({ page }) => {
   await expect(ticket(page, 'בלי קוד')).toBeVisible();
 });
 
-test('T14 empty form: inline errors on name and store, sheet stays open', async ({ page }) => {
+test('T14 empty form: inline errors on name and code (where to use it is optional), sheet stays open', async ({ page }) => {
   await setup(page);
   await page.getByTestId('fab-add').click();
   const s = sheet(page, 'קופון חדש');
   await s.getByTestId('coupon-save').click();
   await expect(s).toBeVisible();
   await expect(s.getByText('חסר שם לקופון')).toBeVisible();
-  await expect(s.getByText('חסר איפה אפשר לממש')).toBeVisible();
-  await expect(s.getByText('חסר קוד / מספר שובר')).toBeVisible();
+  await expect(s.getByText('חסר איפה אפשר לממש')).toHaveCount(0);
+  await expect(s.getByText('חסר קוד / מספר שובר. או שצרפו תמונה של השובר')).toBeVisible();
   await expect(s.getByLabel('שם הקופון')).toBeFocused();
   // fixing a field clears its error
   await s.getByLabel('שם הקופון').fill('משהו');
@@ -293,4 +293,32 @@ test('T69 clicking the expiry field opens the date picker', async ({ page }) => 
   // and a date chosen there shows in the field
   await s.locator('#expiry').fill('2031-04-01');
   await expect(s.getByText('01/04/2031')).toBeVisible();
+});
+
+test('T88 where to use it is optional: saving without it asks first, and the coupon shows cleanly', async ({ page }) => {
+  const { familyId } = await setup(page);
+  await page.getByTestId('fab-add').click();
+  const s = sheet(page, 'קופון חדש');
+  await expect(s.getByText('לא חובה').first()).toBeVisible();
+  await s.getByLabel('שם הקופון').fill('בלי חנות');
+  await chooseType(s, 'אחר');
+  await s.getByLabel('קוד / מספר שובר').fill('NS-1');
+  await s.getByTestId('coupon-save').click();
+  const ask = page.getByRole('alertdialog', { name: 'לא צוין איפה אפשר לממש' });
+  await expect(ask).toContainText('ריק');
+  // back to the form, on the empty field
+  await ask.getByRole('button', { name: 'חזרה למילוי' }).click();
+  await expect(s).toBeVisible();
+  await expect(s.getByLabel('איפה אפשר לממש')).toBeFocused();
+  // save anyway
+  await s.getByTestId('coupon-save').click();
+  await ask.getByRole('button', { name: 'שמירה בכל זאת' }).click();
+  await expect(s).toBeHidden();
+  await expect.poll(async () => (await serverCoupons(page, familyId))[0]?.store).toBe('');
+  // the row shows just the code (no stray "·"); the coupon has no "where" row
+  const row = ticket(page, 'בלי חנות');
+  await expect(row).toContainText('NS-1');
+  expect((await row.innerText()).includes('·')).toBe(false);
+  const d = await openTicket(page, 'בלי חנות');
+  await expect(d.getByText('איפה מממשים')).toHaveCount(0);
 });

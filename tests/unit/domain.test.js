@@ -50,15 +50,17 @@ describe('balances', () => {
 describe('coupon form', () => {
   const valid = { ...formFromCoupon(null), title: 'שובר', store: 'זארה', value: '200', code: 'Z-1' };
   it('a complete form is valid', () => expect(validateCouponForm(valid)).toEqual({}));
-  it('the code is required', () => {
+  it('the code is required, unless a photo of the voucher is attached', () => {
     const e = validateCouponForm({ ...valid, code: '  ' });
-    expect(e.code).toBe('חסר קוד / מספר שובר');
+    expect(e.code).toBe('חסר קוד / מספר שובר. או שצרפו תמונה של השובר');
     expect(firstInvalidField(e)).toBe('code');
+    expect(validateCouponForm({ ...valid, code: '' }, { hasPhoto: true })).toEqual({});
   });
-  it('name and store are required', () => {
+  it('the name is required; where to use it is not (the form asks before saving without it)', () => {
     const e = validateCouponForm({ ...valid, title: ' ', store: '' });
-    expect(e).toMatchObject({ title: 'חסר שם לקופון', store: 'חסר איפה אפשר לממש' });
+    expect(e).toEqual({ title: 'חסר שם לקופון' });
     expect(firstInvalidField(e)).toBe('title');
+    expect(validateCouponForm({ ...valid, store: '  ' })).toEqual({});
   });
   it('a voucher needs an amount; "other" does not', () => {
     expect(validateCouponForm({ ...valid, value: '' }).value).toContain('בשובר כספי צריך סכום');

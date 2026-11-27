@@ -25,17 +25,19 @@ export const formFromCoupon = (coupon) => ({
   notes: coupon?.notes || '',
 });
 
-/** { field: message } for every invalid field (empty = valid). */
-export function validateCouponForm(f) {
+/**
+ * { field: message } for every invalid field (empty = valid). Where to use it is optional (the form asks before
+ * saving without it); the code is optional when a photo of the voucher is attached (`hasPhoto`).
+ */
+export function validateCouponForm(f, { hasPhoto = false } = {}) {
   const e = {};
   if (!f.title.trim()) e.title = 'חסר שם לקופון';
-  if (!f.store.trim()) e.store = 'חסר איפה אפשר לממש';
   if (f.addingCategory && !f.newCategory.trim()) e.category = 'חסר שם לקטגוריה החדשה';
   if (f.addingCategory && f.newCategory.trim() === NO_CATEGORY) e.category = 'השם הזה שמור. בחרו שם אחר';
   const v = f.value === '' ? null : Number(f.value);
   if (f.type === 'money' && !(v > 0)) e.value = 'בשובר כספי צריך סכום. שובר למוצר? בחרו "מוצר"';
   if (f.type === 'percent' && v != null && !(v > 0 && v <= 100)) e.value = 'אחוז בין 1 ל-100';
-  if (!f.code.trim()) e.code = 'חסר קוד / מספר שובר';
+  if (!f.code.trim() && !hasPhoto) e.code = 'חסר קוד / מספר שובר. או שצרפו תמונה של השובר';
   if (f.hasCvv && f.cvv.trim() && !isCvv(f.cvv.trim())) e.cvv = 'קוד אימות הוא 3 ספרות';
   return e;
 }

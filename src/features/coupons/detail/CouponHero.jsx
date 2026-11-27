@@ -70,10 +70,14 @@ export function CouponHero({ coupon, alertDays }) {
         <div className="relative flex items-center gap-3">
           <BrandLogo coupon={coupon} size={40} solid />
           <div className="min-w-0 flex-1">
-            <p className="flex items-center gap-1.5 text-sm font-medium text-white/90">
-              <Store className="h-3.5 w-3.5 shrink-0 text-champagne" strokeWidth={1.75} />
-              <span className="truncate">{displayStore(coupon.store)}</span>
-            </p>
+            {coupon.store ? (
+              <p className="flex items-center gap-1.5 text-sm font-medium text-white/90">
+                <Store className="h-3.5 w-3.5 shrink-0 text-champagne" strokeWidth={1.75} />
+                <span className="truncate">{displayStore(coupon.store)}</span>
+              </p>
+            ) : (
+              <p className="truncate text-sm font-medium text-white/90">{coupon.title}</p>
+            )}
             {(cats.length > 0 || isPhysical(coupon)) && (
               <div className="mt-1 flex flex-wrap gap-1">
                 {cats.length > 0 && (

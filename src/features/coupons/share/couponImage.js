@@ -149,8 +149,8 @@ export async function renderCouponImage(coupon) {
     text(ctx, (displayStore(coupon.store) || coupon.title || '?').trim().charAt(0), tileX + tileW / 2, y + 100, { color: '#5C74AA', align: 'center' });
   }
   const headW = tileX - 36 - left;
-  text(ctx, fit(ctx, coupon.title || '', headW, 700, 60, 38), tileX - 36, y + 70, { color: C.white });
-  text(ctx, fit(ctx, displayStore(coupon.store), headW, 400, 40, 28), tileX - 36, y + 128, { color: 'rgba(255,255,255,0.82)' });
+  text(ctx, fit(ctx, coupon.title || '', headW, 700, 60, 38), tileX - 36, y + (coupon.store ? 70 : 96), { color: C.white });
+  if (coupon.store) text(ctx, fit(ctx, displayStore(coupon.store), headW, 400, 40, 28), tileX - 36, y + 128, { color: 'rgba(255,255,255,0.82)' });
   y += H_HEAD;
 
   // value

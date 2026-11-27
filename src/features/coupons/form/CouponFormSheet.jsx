@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { ChevronDown, Plus, X, Hash, Type, Gift, Check } from 'lucide-react';
-import { Button, DateInput, Field, Input, LiquidSelect, Segmented, Sheet, TextArea, cx } from '@/ui';
+import { Button, DateInput, Field, Input, LiquidSelect, Segmented, Sheet, TextArea, cx, useConfirm } from '@/ui';
 import { COUPON_FORMATS, COUPON_TYPES, hasValue } from '@/domain/constants';
 import { usedAmount } from '@/domain/coupon';
 import { useCouponActions } from '../useCouponActions';
@@ -19,11 +19,28 @@ export function CouponFormSheet({ coupon, family, user, categories, stores, onCl
   const photo = usePhotoField(family.id, coupon);
   const [more, setMore] = useState(!!(coupon?.source || coupon?.notes));
 
+  const confirm = useConfirm();
   const save = () =>
-    submit((data) => {
-      actions.save(data, coupon, categories, photo.change);
-      onClose();
-    });
+    submit(
+      async (data) => {
+        // where to use it is optional, but easy to forget: ask before saving without it
+        if (!data.store) {
+          const ok = await confirm({
+            title: 'לא צוין איפה אפשר לממש',
+            message: 'השדה "איפה אפשר לממש" ריק. לשמור את הקופון בכל זאת?',
+            confirmText: 'שמירה בכל זאת',
+            cancelText: 'חזרה למילוי',
+          });
+          if (!ok) {
+            body.current?.querySelector('#store')?.focus();
+            return;
+          }
+        }
+        actions.save(data, coupon, categories, photo.change);
+        onClose();
+      },
+      { hasPhoto: !!photo.preview },
+    );
 
   const used = editing ? usedAmount(coupon) : 0;
   const unit = f.type === 'money' ? '₪' : f.type === 'percent' ? '%' : null;
@@ -52,7 +69,7 @@ export function CouponFormSheet({ coupon, family, user, categories, stores, onCl
           </Field>
         </div>
 
-        <Field id="store" label="איפה אפשר לממש" error={errors.store}>
+        <Field id="store" label="איפה אפשר לממש" aside={<span className="text-[10px] font-light text-mute/45">לא חובה</span>} error={errors.store}>
           <StoreInput value={f.store} onChange={set('store')} stores={stores} error={errors.store} />
         </Field>
 

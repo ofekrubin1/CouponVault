@@ -57,9 +57,11 @@ export function CouponCode({ code, label = 'קוד קופון', copied = 'הקו
 export function CouponInfo({ coupon }) {
   return (
     <div className="glass-card divide-y divide-navy/[0.05] rounded-[18px] px-4">
-      <Row icon={Store} label="איפה מממשים">
-        <StoreValue store={coupon.store} />
-      </Row>
+      {coupon.store && (
+        <Row icon={Store} label="איפה מממשים">
+          <StoreValue store={coupon.store} />
+        </Row>
+      )}
       {couponCategories(coupon).length > 0 && (
         <Row icon={Tag} label={couponCategories(coupon).length > 1 ? 'קטגוריות' : 'קטגוריה'}>
           {couponCategories(coupon).join(' · ')}

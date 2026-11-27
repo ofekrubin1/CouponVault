@@ -22,8 +22,9 @@ export function useCouponForm(coupon, categories, bodyRef) {
 
   const toggleCategory = (c) => set('categories')(f.categories.includes(c) ? f.categories.filter((x) => x !== c) : [...f.categories, c]);
 
-  function submit(onValid) {
-    const e = validateCouponForm(f);
+  /** Validates (`opts.hasPhoto`: a voucher photo is attached), then calls onValid with the data to store. */
+  function submit(onValid, opts) {
+    const e = validateCouponForm(f, opts);
     setErrors(e);
     const first = firstInvalidField(e);
     if (!first) return onValid(couponFromForm(f, coupon));

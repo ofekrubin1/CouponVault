@@ -110,10 +110,10 @@ export function CouponRow({ coupon, alertDays, onClick, onDelete }) {
             </span>
             <span className="mt-0.5 flex items-baseline gap-2">
               <span className="flex min-w-0 flex-1 items-baseline gap-1 truncate text-[12px] text-mute/55">
-                <span className="truncate">{displayStore(coupon.store)}</span>
+                {coupon.store && <span className="truncate">{displayStore(coupon.store)}</span>}
                 {coupon.code && (
                   <>
-                    <span aria-hidden>·</span>
+                    {coupon.store && <span aria-hidden>·</span>}
                     <bdi dir="ltr" className="truncate font-mono text-[11.5px] tracking-wide text-mute/75">
                       {coupon.code}
                     </bdi>

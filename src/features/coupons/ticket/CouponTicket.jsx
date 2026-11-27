@@ -78,10 +78,12 @@ export function CouponTicket({ coupon, alertDays, onClick, onDelete }) {
               <BrandLogo coupon={coupon} size={38} />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[15px] font-semibold text-ink">{coupon.title}</p>
-                <p className="mt-0.5 flex items-center gap-1 truncate text-xs font-light text-mute/70">
-                  <Store className="h-3 w-3 shrink-0" strokeWidth={1.75} />
-                  <span className="truncate">{displayStore(coupon.store)}</span>
-                </p>
+                {coupon.store && (
+                  <p className="mt-0.5 flex items-center gap-1 truncate text-xs font-light text-mute/70">
+                    <Store className="h-3 w-3 shrink-0" strokeWidth={1.75} />
+                    <span className="truncate">{displayStore(coupon.store)}</span>
+                  </p>
+                )}
               </div>
             </div>
             <div className="mt-3 flex items-center gap-2">

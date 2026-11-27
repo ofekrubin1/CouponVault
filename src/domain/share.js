@@ -17,7 +17,7 @@ function worth(c) {
 export function couponShareText(c) {
   const lines = [
     `🎟️ ${c.title}`,
-    `איפה: ${displayStore(c.store)}`,
+    c.store ? `איפה: ${displayStore(c.store)}` : '',
     isUrl(c.store) ? c.store.trim() : '',
     worth(c),
     c.code ? `קוד: ${c.code}` : '',
